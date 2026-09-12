@@ -1,0 +1,16 @@
+#!/usr/bin/env node
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+require("source-map-support/register");
+const cdk = require("aws-cdk-lib");
+const doc_explainer_stack_1 = require("../lib/doc-explainer-stack");
+const app = new cdk.App();
+new doc_explainer_stack_1.DocExplainerStack(app, 'DocExplainerStack', {
+    stackName: 'doc-explainer-agent-stack',
+    description: 'Doc-Explainer Agent Infrastructure - First Commit Hackathon',
+    env: {
+        account: process.env.CDK_DEFAULT_ACCOUNT,
+        region: process.env.CDK_DEFAULT_REGION || 'us-east-1',
+    },
+});
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiYXBwLmpzIiwic291cmNlUm9vdCI6IiIsInNvdXJjZXMiOlsiYXBwLnRzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiI7OztBQUNBLHVDQUFxQztBQUNyQyxtQ0FBbUM7QUFDbkMsb0VBQStEO0FBRS9ELE1BQU0sR0FBRyxHQUFHLElBQUksR0FBRyxDQUFDLEdBQUcsRUFBRSxDQUFDO0FBRTFCLElBQUksdUNBQWlCLENBQUMsR0FBRyxFQUFFLG1CQUFtQixFQUFFO0lBQzlDLFNBQVMsRUFBRSwyQkFBMkI7SUFDdEMsV0FBVyxFQUFFLDZEQUE2RDtJQUMxRSxHQUFHLEVBQUU7UUFDSCxPQUFPLEVBQUUsT0FBTyxDQUFDLEdBQUcsQ0FBQyxtQkFBbUI7UUFDeEMsTUFBTSxFQUFFLE9BQU8sQ0FBQyxHQUFHLENBQUMsa0JBQWtCLElBQUksV0FBVztLQUN0RDtDQUNGLENBQUMsQ0FBQyIsInNvdXJjZXNDb250ZW50IjpbIiMhL3Vzci9iaW4vZW52IG5vZGVcbmltcG9ydCAnc291cmNlLW1hcC1zdXBwb3J0L3JlZ2lzdGVyJztcbmltcG9ydCAqIGFzIGNkayBmcm9tICdhd3MtY2RrLWxpYic7XG5pbXBvcnQgeyBEb2NFeHBsYWluZXJTdGFjayB9IGZyb20gJy4uL2xpYi9kb2MtZXhwbGFpbmVyLXN0YWNrJztcblxuY29uc3QgYXBwID0gbmV3IGNkay5BcHAoKTtcblxubmV3IERvY0V4cGxhaW5lclN0YWNrKGFwcCwgJ0RvY0V4cGxhaW5lclN0YWNrJywge1xuICBzdGFja05hbWU6ICdkb2MtZXhwbGFpbmVyLWFnZW50LXN0YWNrJyxcbiAgZGVzY3JpcHRpb246ICdEb2MtRXhwbGFpbmVyIEFnZW50IEluZnJhc3RydWN0dXJlIC0gRmlyc3QgQ29tbWl0IEhhY2thdGhvbicsXG4gIGVudjoge1xuICAgIGFjY291bnQ6IHByb2Nlc3MuZW52LkNES19ERUZBVUxUX0FDQ09VTlQsXG4gICAgcmVnaW9uOiBwcm9jZXNzLmVudi5DREtfREVGQVVMVF9SRUdJT04gfHwgJ3VzLWVhc3QtMScsXG4gIH0sXG59KTtcbiJdfQ==
