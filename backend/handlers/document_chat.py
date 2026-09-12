@@ -58,7 +58,7 @@ def answer_document_question(
     )
 
     prompt = (
-        f"Document Content:\n\n{raw_text[:12000]}\n\n"
+        f"Document Content:\n\n{raw_text[:100000]}\n\n"
         f"{risk_context}"
         f"{calc_context}"
         f"User Question: {question}\n\n"

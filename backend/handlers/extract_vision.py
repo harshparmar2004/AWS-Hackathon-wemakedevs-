@@ -30,11 +30,48 @@ def extract_document_with_vision(image_bytes: bytes, media_type: str = "image/pn
         "Respond in clear, structured format."
     )
 
-    fmt = "png"
-    if "jpeg" in media_type or "jpg" in media_type:
-        fmt = "jpeg"
-    elif "webp" in media_type:
-        fmt = "webp"
+    media_lower = media_type.lower()
+    if "pdf" in media_lower:
+        content_item = {
+            "document": {
+                "format": "pdf",
+                "name": "uploaded_document",
+                "source": {
+                    "bytes": image_bytes
+                }
+            }
+        }
+    elif any(ext in media_lower for ext in ["csv", "doc", "docx", "xls", "xlsx", "html", "txt", "md"]):
+        detected_fmt = "txt"
+        for candidate in ["csv", "doc", "docx", "xls", "xlsx", "html", "txt", "md"]:
+            if candidate in media_lower:
+                detected_fmt = candidate
+                break
+        content_item = {
+            "document": {
+                "format": detected_fmt,
+                "name": "uploaded_document",
+                "source": {
+                    "bytes": image_bytes
+                }
+            }
+        }
+    else:
+        fmt = "png"
+        if "jpeg" in media_lower or "jpg" in media_lower:
+            fmt = "jpeg"
+        elif "webp" in media_lower:
+            fmt = "webp"
+        elif "gif" in media_lower:
+            fmt = "gif"
+        content_item = {
+            "image": {
+                "format": fmt,
+                "source": {
+                    "bytes": image_bytes
+                }
+            }
+        }
 
     try:
         response = client.converse(
@@ -43,14 +80,7 @@ def extract_document_with_vision(image_bytes: bytes, media_type: str = "image/pn
                 {
                     "role": "user",
                     "content": [
-                        {
-                            "image": {
-                                "format": fmt,
-                                "source": {
-                                    "bytes": image_bytes
-                                }
-                            }
-                        },
+                        content_item,
                         {
                             "text": prompt
                         }

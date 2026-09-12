@@ -55,7 +55,7 @@ def extract_risk_flags(raw_text: str) -> Dict[str, Any]:
         messages=[
             {
                 "role": "user",
-                "content": [{"text": f"Document text:\n\n{raw_text[:12000]}"}]
+                "content": [{"text": f"Document text:\n\n{raw_text[:100000]}"}]
             }
         ],
         system=[{"text": system_prompt}],
