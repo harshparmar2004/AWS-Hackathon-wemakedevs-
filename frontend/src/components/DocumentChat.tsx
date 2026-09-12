@@ -14,8 +14,20 @@ import {
   ChevronDown,
   ChevronUp,
   AlertTriangle,
+  Calculator,
+  TrendingUp,
+  Lock,
+  Zap,
 } from 'lucide-react';
-import { DocumentData, ChatMessage } from '../types';
+import {
+  DocumentData,
+  ChatMessage,
+  UnifiedCalculationData,
+  LoanCalculationData,
+  TariffCalculationData,
+  CustomFormulaData,
+  ProjectionData,
+} from '../types';
 import { askDocumentQuestion, getStoredDocumentChat, saveDocumentChat } from '../services/api';
 
 interface DocumentChatProps {
@@ -24,13 +36,39 @@ interface DocumentChatProps {
   initialTab?: 'points' | 'chat';
 }
 
-const DEFAULT_SUGGESTIONS = [
-  'What happens if I delay payment by 15 days?',
-  'What is the notice period and lock-in clause?',
-  'What non-refundable deductions are taken from my deposit?',
-  'Can the owner or company increase rates without notice?',
-  'What are the termination conditions?',
-];
+function getSuggestionsForDoc(doc: DocumentData): string[] {
+  const engine = doc.projections?.engine;
+  const isLoan = engine === 'loan_emi_foreclosure' || doc.docId?.includes('loan') || doc.docType?.toLowerCase().includes('loan');
+  const isPower = engine === 'tiered_power_tariff' || doc.docId?.includes('power') || doc.docType?.toLowerCase().includes('electricity') || doc.docType?.toLowerCase().includes('utility');
+
+  if (isLoan) {
+    return [
+      'What is my exact monthly EMI and total interest?',
+      'Can I foreclose or prepay my loan early without penalty?',
+      'What happens if I miss an EMI payment or NACH bounces?',
+      'What is the lock-in period for prepayment?',
+      'What is the total repayment amount over 36 months?',
+    ];
+  }
+
+  if (isPower) {
+    return [
+      'How is my electricity bill calculated across tiered slabs?',
+      'What is the fuel adjustment (FAC) and fixed demand charge?',
+      'What is the exact disconnection notice and late fee surcharge?',
+      'How much state electricity duty and peak surcharge is applied?',
+      'What is the average cost per kWh unit on this bill?',
+    ];
+  }
+
+  return [
+    'What happens if I delay rent payment by 15 days?',
+    'What is the notice period and lock-in clause?',
+    'What non-refundable deductions are taken from my deposit?',
+    'Can the owner increase rent without notice?',
+    'What are the termination conditions?',
+  ];
+}
 
 function getDefaultMessagesForDoc(doc: DocumentData): ChatMessage[] {
   const isRental = doc.docId?.includes('rent');
@@ -117,6 +155,323 @@ function getDefaultMessagesForDoc(doc: DocumentData): ChatMessage[] {
     },
   ];
 }
+
+const MathematicalProjectionCard: React.FC<{
+  projections?: UnifiedCalculationData;
+  isHindi?: boolean;
+  translatedNarrative?: string;
+}> = ({ projections, isHindi, translatedNarrative }) => {
+  if (!projections) return null;
+
+  const engine = (projections as any).engine || 'compound_penalty';
+
+  // Engine 2: Loan EMI & Early Foreclosure Engine
+  if (engine === 'loan_emi_foreclosure') {
+    const loan = projections as LoanCalculationData;
+    return (
+      <div className="space-y-2 pt-1">
+        <div className="text-xs font-bold text-sand-800 flex items-center justify-between">
+          <div className="flex items-center space-x-1.5">
+            <Calculator className="w-3.5 h-3.5 text-burnt" />
+            <span>{isHindi ? 'ऋण ईएमआई व फोरक्लोज़र विश्लेषण:' : 'Loan EMI & Foreclosure Engine:'}</span>
+          </div>
+          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-burnt-light text-burnt uppercase">
+            Deterministic Math
+          </span>
+        </div>
+
+        <div className="bg-sand-50/90 border border-sand-200/90 rounded-lg p-3 space-y-2.5 text-xs">
+          {/* 4 Stat Tiles */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-white border border-sand-200/80 rounded-md p-2 shadow-2xs">
+              <span className="text-[10px] text-ink-muted uppercase font-semibold block">Monthly EMI</span>
+              <span className="text-sm font-bold text-burnt">₹{loan.monthlyEmi?.toLocaleString()}</span>
+              <span className="text-[10px] text-ink-muted block">{loan.tenureMonths} Months</span>
+            </div>
+            <div className="bg-white border border-sand-200/80 rounded-md p-2 shadow-2xs">
+              <span className="text-[10px] text-ink-muted uppercase font-semibold block">Loan Principal</span>
+              <span className="text-sm font-bold text-sand-900">₹{loan.principal?.toLocaleString()}</span>
+              <span className="text-[10px] text-ink-muted block">@{loan.annualInterestRatePercent}% p.a.</span>
+            </div>
+            <div className="bg-white border border-sand-200/80 rounded-md p-2 shadow-2xs">
+              <span className="text-[10px] text-ink-muted uppercase font-semibold block">Total Interest</span>
+              <span className="text-sm font-bold text-sand-900">₹{loan.totalInterest?.toLocaleString()}</span>
+              <span className="text-[10px] text-ink-muted block">Payback: ₹{loan.totalPayment?.toLocaleString()}</span>
+            </div>
+            <div className="bg-white border border-sand-200/80 rounded-md p-2 shadow-2xs">
+              <span className="text-[10px] text-ink-muted uppercase font-semibold block">Missed EMI Penal</span>
+              <span className="text-sm font-bold text-red-600">₹{loan.penalInterestPerMissedEmi?.toLocaleString()}/mo</span>
+              <span className="text-[10px] text-red-500 block">{loan.missedEmiPenalRatePercent}% p.a.</span>
+            </div>
+          </div>
+
+          {/* Lock-In Notice */}
+          <div className="flex items-center space-x-1.5 px-2.5 py-1.5 bg-amber-50 border border-amber-200 text-amber-900 rounded-md text-[11px] font-medium">
+            <Lock className="w-3.5 h-3.5 text-amber-700 flex-shrink-0" />
+            <span>
+              {loan.lockInPeriodMonths}-Month Lock-in Period: Foreclosure disallowed in Year 1. {loan.foreclosureChargePercent}% + 18% GST penalty thereafter.
+            </span>
+          </div>
+
+          {/* Milestone Foreclosure Table */}
+          {loan.milestones && loan.milestones.length > 0 && (
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider block">
+                Early Exit & Foreclosure Projections:
+              </span>
+              <div className="overflow-x-auto">
+                <table className="w-full text-[11px] text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-sand-200 text-ink-muted text-[10px]">
+                      <th className="pb-1 font-semibold">Timeline</th>
+                      <th className="pb-1 font-semibold">Balance</th>
+                      <th className="pb-1 font-semibold">Exit Penalty</th>
+                      <th className="pb-1 font-semibold text-right">To Close</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-sand-100">
+                    {loan.milestones.map((m, idx) => (
+                      <tr key={idx} className="hover:bg-sand-100/50">
+                        <td className="py-1 font-medium text-sand-900">Month {m.month}</td>
+                        <td className="py-1 text-sand-800">₹{m.remainingPrincipal?.toLocaleString()}</td>
+                        <td className="py-1">
+                          {m.isLockInActive ? (
+                            <span className="text-amber-800 font-semibold text-[10px] bg-amber-100/70 px-1.5 py-0.5 rounded">
+                              Locked 🚫
+                            </span>
+                          ) : m.totalForeclosureCost > 0 ? (
+                            <span className="text-red-700 font-semibold text-[10px]">
+                              +₹{Math.round(m.totalForeclosureCost).toLocaleString()}
+                            </span>
+                          ) : (
+                            <span className="text-emerald-700 font-semibold text-[10px]">₹0</span>
+                          )}
+                        </td>
+                        <td className="py-1 text-right font-bold text-sand-900">
+                          ₹{Math.round(m.totalToCloseLoan).toLocaleString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Verified Narrative */}
+          <div className="p-2 bg-burnt-light/40 border border-burnt/20 rounded-md text-[11px] text-sand-900 leading-relaxed">
+            <span className="font-bold text-burnt-dark block mb-0.5">Verified Calculation:</span>
+            {isHindi && translatedNarrative ? translatedNarrative : loan.narrative}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Engine 3: Tiered Utility Tariff Slabs
+  if (engine === 'tiered_power_tariff') {
+    const tariff = projections as TariffCalculationData;
+    return (
+      <div className="space-y-2 pt-1">
+        <div className="text-xs font-bold text-sand-800 flex items-center justify-between">
+          <div className="flex items-center space-x-1.5">
+            <Zap className="w-3.5 h-3.5 text-amber-600" />
+            <span>{isHindi ? 'टैरिफ स्लैब व बिजली बिल विश्लेषण:' : 'Tiered Tariff & Demand Engine:'}</span>
+          </div>
+          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 uppercase">
+            Telescopic Slabs
+          </span>
+        </div>
+
+        <div className="bg-sand-50/90 border border-sand-200/90 rounded-lg p-3 space-y-2.5 text-xs">
+          {/* 4 Stat Tiles */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-white border border-sand-200/80 rounded-md p-2 shadow-2xs">
+              <span className="text-[10px] text-ink-muted uppercase font-semibold block">Total Net Bill</span>
+              <span className="text-sm font-bold text-amber-700">₹{tariff.totalNetBill?.toLocaleString()}</span>
+              <span className="text-[10px] text-emerald-600 font-semibold block">Verified Exact</span>
+            </div>
+            <div className="bg-white border border-sand-200/80 rounded-md p-2 shadow-2xs">
+              <span className="text-[10px] text-ink-muted uppercase font-semibold block">Units Billed</span>
+              <span className="text-sm font-bold text-sand-900">{tariff.unitsKwh?.toLocaleString()} kWh</span>
+              <span className="text-[10px] text-ink-muted block">{tariff.sanctionedLoadKw} kW Load</span>
+            </div>
+            <div className="bg-white border border-sand-200/80 rounded-md p-2 shadow-2xs">
+              <span className="text-[10px] text-ink-muted uppercase font-semibold block">Energy Charges</span>
+              <span className="text-sm font-bold text-sand-900">₹{tariff.energyCharge?.toLocaleString()}</span>
+              <span className="text-[10px] text-ink-muted block">{tariff.slabBreakdown?.length} Slabs</span>
+            </div>
+            <div className="bg-white border border-sand-200/80 rounded-md p-2 shadow-2xs">
+              <span className="text-[10px] text-ink-muted uppercase font-semibold block">Average Cost / Unit</span>
+              <span className="text-sm font-bold text-sand-900">₹{tariff.averageCostPerUnit}/kWh</span>
+              <span className="text-[10px] text-ink-muted block">{tariff.dutyPercent}% State Duty</span>
+            </div>
+          </div>
+
+          {/* Telescopic Slabs Table */}
+          {tariff.slabBreakdown && tariff.slabBreakdown.length > 0 && (
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider block">
+                Telescopic Consumption Slab Breakdown:
+              </span>
+              <div className="overflow-x-auto">
+                <table className="w-full text-[11px] text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-sand-200 text-ink-muted text-[10px]">
+                      <th className="pb-1 font-semibold">Slab Tier</th>
+                      <th className="pb-1 font-semibold">Units</th>
+                      <th className="pb-1 font-semibold">Rate</th>
+                      <th className="pb-1 font-semibold text-right">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-sand-100">
+                    {tariff.slabBreakdown.map((s, idx) => (
+                      <tr key={idx} className="hover:bg-sand-100/50">
+                        <td className="py-1 font-medium text-sand-900">{s.label}</td>
+                        <td className="py-1 text-sand-800">{s.units} kWh</td>
+                        <td className="py-1 text-ink-muted">₹{s.ratePerUnit.toFixed(2)}</td>
+                        <td className="py-1 text-right font-bold text-sand-900">₹{s.charge.toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Demand & Taxes Breakdown Row */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-1 border-t border-sand-200/70 text-[10px]">
+            <div className="bg-white px-2 py-1 rounded border border-sand-200">
+              <span className="text-ink-muted block">Fixed Charge:</span>
+              <span className="font-bold text-sand-900">₹{tariff.fixedCharge}</span>
+            </div>
+            <div className="bg-white px-2 py-1 rounded border border-sand-200">
+              <span className="text-ink-muted block">Fuel Adj (FAC):</span>
+              <span className="font-bold text-sand-900">₹{tariff.fuelAdjustmentCharge}</span>
+            </div>
+            <div className="bg-white px-2 py-1 rounded border border-sand-200">
+              <span className="text-ink-muted block">Peak Surcharge:</span>
+              <span className="font-bold text-sand-900">₹{tariff.peakSurcharge}</span>
+            </div>
+            <div className="bg-white px-2 py-1 rounded border border-sand-200">
+              <span className="text-ink-muted block">State Duty:</span>
+              <span className="font-bold text-sand-900">₹{tariff.electricityDuty}</span>
+            </div>
+          </div>
+
+          {/* Verified Narrative */}
+          <div className="p-2 bg-amber-50/80 border border-amber-200/80 rounded-md text-[11px] text-sand-900 leading-relaxed">
+            <span className="font-bold text-amber-900 block mb-0.5">Verified Calculation:</span>
+            {isHindi && translatedNarrative ? translatedNarrative : tariff.narrative}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Engine 4: Custom Formula Synthesizer
+  if (engine === 'custom_formula') {
+    const custom = projections as CustomFormulaData;
+    return (
+      <div className="space-y-2 pt-1">
+        <div className="text-xs font-bold text-sand-800 flex items-center justify-between">
+          <div className="flex items-center space-x-1.5">
+            <Calculator className="w-3.5 h-3.5 text-burnt" />
+            <span>{custom.formulaName || 'Custom Document Formula Engine:'}</span>
+          </div>
+          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-burnt-light text-burnt uppercase">
+            Stepped Formula
+          </span>
+        </div>
+
+        <div className="bg-sand-50/90 border border-sand-200/90 rounded-lg p-3 space-y-2.5 text-xs">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-ink-muted">{custom.formulaDescription}</span>
+            <span className="font-bold text-sand-900">Base: ₹{custom.baseAmount?.toLocaleString()}</span>
+          </div>
+
+          {custom.projections && custom.projections.length > 0 && (
+            <div className="overflow-x-auto">
+              <table className="w-full text-[11px] text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-sand-200 text-ink-muted text-[10px]">
+                    <th className="pb-1 font-semibold">Timeline</th>
+                    <th className="pb-1 font-semibold">Rule</th>
+                    <th className="pb-1 font-semibold">Penalty</th>
+                    <th className="pb-1 font-semibold text-right">Liability</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-sand-100">
+                  {custom.projections.map((p, idx) => (
+                    <tr key={idx} className="hover:bg-sand-100/50">
+                      <td className="py-1 font-medium text-sand-900">Day {p.day}</td>
+                      <td className="py-1 text-sand-800 text-[10px]">{p.ruleApplied}</td>
+                      <td className="py-1 text-red-700 font-semibold">+₹{p.totalPenalty?.toLocaleString()}</td>
+                      <td className="py-1 text-right font-bold text-sand-900">₹{p.totalLiability?.toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <div className="p-2 bg-sand-100 border border-sand-200 rounded-md text-[11px] text-sand-900 leading-relaxed">
+            {isHindi && translatedNarrative ? translatedNarrative : custom.narrative}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Engine 1: Compound Penalty Projections (Default)
+  const penalty = projections as ProjectionData;
+  return (
+    <div className="space-y-2 pt-1">
+      <div className="text-xs font-bold text-sand-800 flex items-center justify-between">
+        <div className="flex items-center space-x-1.5">
+          <TrendingUp className="w-3.5 h-3.5 text-burnt" />
+          <span>{isHindi ? 'चक्रवृद्धि विलंब जुर्माना विश्लेषण:' : 'Compounding Overdue Penalty Engine:'}</span>
+        </div>
+        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-burnt-light text-burnt uppercase">
+          A = P(1+r/n)ⁿᵗ
+        </span>
+      </div>
+
+      <div className="bg-sand-50/90 border border-sand-200/90 rounded-lg p-3 space-y-2.5 text-xs">
+        <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+          <span className="font-bold text-sand-900 bg-white px-2 py-0.5 rounded border border-sand-200">
+            Base: ₹{penalty.principal?.toLocaleString()}
+          </span>
+          <span className="text-ink-muted bg-white px-2 py-0.5 rounded border border-sand-200">
+            Rate: {penalty.annualRatePercent}% p.a.
+          </span>
+          {penalty.flatPenaltyPerMonth > 0 && (
+            <span className="text-ink-muted bg-white px-2 py-0.5 rounded border border-sand-200">
+              Late Fee: ₹{penalty.flatPenaltyPerMonth}/mo
+            </span>
+          )}
+        </div>
+
+        {penalty.projections && penalty.projections.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {penalty.projections.map((item, idx) => (
+              <div key={idx} className="bg-white border border-sand-200 rounded-lg p-2 text-center shadow-2xs">
+                <div className="text-[10px] text-ink-muted font-semibold">{item.months} {item.months === 1 ? 'Month' : 'Months'}</div>
+                <div className="text-xs font-bold text-sand-900 mt-0.5">₹{item.totalLiability?.toLocaleString()}</div>
+                <div className="text-[10px] font-bold text-red-700">+{item.percentageIncrease}%</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="p-2 bg-burnt-light/40 border border-burnt/20 rounded-md text-[11px] text-sand-900 leading-relaxed">
+          <span className="font-bold text-burnt-dark block mb-0.5">Verified Calculation:</span>
+          {isHindi && translatedNarrative ? translatedNarrative : penalty.narrative}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export const DocumentChat: React.FC<DocumentChatProps> = ({
   document,
@@ -390,6 +745,13 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
                 </div>
               )}
 
+              {/* Multi-Engine Deterministic Mathematical Projections */}
+              <MathematicalProjectionCard
+                projections={document.projections}
+                isHindi={isHindi}
+                translatedNarrative={document.translatedProjectionNarrative}
+              />
+
               {/* Key Dates (if available) */}
               {document.keyDates && document.keyDates.length > 0 && (
                 <div className="space-y-1.5 pt-1">
@@ -408,7 +770,7 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
               )}
 
               <div className="pt-2 text-xs text-ink-muted border-t border-sand-100 flex items-center space-x-1">
-                <span>💡 Ask the AI assistant on the right about any clause.</span>
+                <span>💡 Ask the AI assistant on the right about any clause or calculation.</span>
               </div>
             </div>
           </div>
@@ -439,7 +801,7 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
                 <Sparkles className="w-3.5 h-3.5 mr-1 text-burnt" />
                 Suggested:
               </span>
-              {DEFAULT_SUGGESTIONS.map((sug, idx) => (
+              {getSuggestionsForDoc(document).map((sug, idx) => (
                 <button
                   key={idx}
                   onClick={() => handleSend(sug)}

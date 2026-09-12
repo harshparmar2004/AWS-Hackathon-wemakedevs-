@@ -18,8 +18,9 @@ def extract_risk_flags(raw_text: str) -> Dict[str, Any]:
     client = get_bedrock_client()
 
     system_prompt = (
-        "You are an expert legal risk auditor. Scan the document for traps, penalties, forfeitures, "
+        "You are an expert legal and financial risk auditor. Scan the document for traps, penalties, forfeitures, "
         "interest rates, non-refundable charges, and aggressive terms. "
+        "Also classify the appropriate mathematical engine and extract its exact parameters. "
         "You must respond ONLY in valid JSON matching this exact schema:\n"
         "{\n"
         '  "riskFlags": [\n'
@@ -30,16 +31,22 @@ def extract_risk_flags(raw_text: str) -> Dict[str, Any]:
         "    }\n"
         "  ],\n"
         '  "financialParameters": {\n'
+        '    "calculationType": "compound_penalty | loan_emi_foreclosure | tiered_power_tariff | custom_formula",\n'
         '    "principal": 35000.0,\n'
         '    "annualRatePercent": 24.0,\n'
         '    "flatPenaltyPerMonth": 500.0,\n'
-        '    "compoundingFrequency": "monthly"\n'
+        '    "compoundingFrequency": "monthly",\n'
+        '    "tenureMonths": 60,\n'
+        '    "foreclosureChargePercent": 4.0,\n'
+        '    "unitsKwh": 280.0,\n'
+        '    "sanctionedLoadKw": 4.0\n'
         "  }\n"
         "}\n"
         "Instructions:\n"
-        "- If late penalties or interest rates exist, set 'principal' to base rent/bill/loan amount, "
-        "'annualRatePercent' to the annual interest rate (e.g. 2% monthly = 24%), and 'flatPenaltyPerMonth' to any flat charge.\n"
-        "- If no late penalty rate exists, estimate base liability and rate 0.\n"
+        "- If document is a Loan/Sanction, set calculationType='loan_emi_foreclosure', extract principal loan amount, annual interest rate, tenure in months, and foreclosure charge.\n"
+        "- If document is an Electricity/Power Bill, set calculationType='tiered_power_tariff', extract unitsKwh consumed, sanctionedLoadKw, and fixed charges.\n"
+        "- If document has late rent/invoice penalties, set calculationType='compound_penalty', extract principal liability, annual interest rate (e.g. 2% monthly = 24%), and monthly late fee.\n"
+        "- If document has an unusual stepped delay formula, set calculationType='custom_formula' with formulaName and baseAmount.\n"
         "- Return strictly JSON, no markdown wrapper."
     )
 

@@ -19,27 +19,50 @@ dynamodb = boto3.resource("dynamodb")
 def get_bedrock_client():
     return boto3.client("bedrock-runtime", region_name=AWS_REGION)
 
-def answer_document_question(raw_text: str, question: str, target_language: str = "english") -> Dict[str, Any]:
+def answer_document_question(
+    raw_text: str,
+    question: str,
+    target_language: str = "english",
+    deterministic_calc: Optional[Dict[str, Any]] = None,
+    risk_flags: Optional[List[Dict[str, Any]]] = None
+) -> Dict[str, Any]:
     client = get_bedrock_client()
 
     lang_instruction = ""
     if target_language.lower() not in ["english", "en"]:
         lang_instruction = f"Provide your answer in {target_language} using native script, while keeping numbers, monetary amounts, and clause references clear."
 
+    calc_context = ""
+    if deterministic_calc:
+        calc_context = (
+            "\nVERIFIED DETERMINISTIC MATHEMATICAL CALCULATIONS (Calculated by specialized Python Math Engine - DO NOT DO MENTAL ARITHMETIC, CITE THESE EXACT VALUES):\n"
+            f"{json.dumps(deterministic_calc, default=str, indent=2)}\n"
+        )
+
+    risk_context = ""
+    if risk_flags:
+        risk_context = (
+            "\nDOCUMENT RISK FLAGS & EXTRACTED CLAUSES:\n"
+            f"{json.dumps(risk_flags, default=str, indent=2)}\n"
+        )
+
     system_prompt = (
-        "You are an expert AI Legal & Document Assistant. Answer the user's question using ONLY the provided document text. "
+        "You are an expert AI Legal, Financial & Utility Document Assistant. Answer the user's question using ONLY the provided document text and verified calculations. "
         "Guidelines:\n"
         "1. Give point-wise, clear, easy-to-understand explanations with zero unnecessary legal jargon.\n"
         "2. Always cite the exact clause, section, or line number if available in the text.\n"
         "3. Highlight specific dates, monetary amounts, or deadlines involved.\n"
-        "4. If the document does not mention the answer, state honestly that it is not specified in the document.\n"
+        "4. If the question asks for math, EMI, late fees, tariff slabs, or penalties, cite the exact numbers from the VERIFIED DETERMINISTIC MATHEMATICAL CALCULATIONS section.\n"
+        "5. If the document does not mention the answer, state honestly that it is not specified in the document.\n"
         f"{lang_instruction}"
     )
 
     prompt = (
         f"Document Content:\n\n{raw_text[:12000]}\n\n"
+        f"{risk_context}"
+        f"{calc_context}"
         f"User Question: {question}\n\n"
-        "Answer point-wise with citations:"
+        "Answer point-wise with exact clause citations and numbers:"
     )
 
     response = client.converse(
@@ -117,7 +140,15 @@ def lambda_handler(event: Dict[str, Any], context: Any = None) -> Dict[str, Any]
             }
 
         raw_text = item.get("rawExtraction") or item.get("explanation", "")
-        result = answer_document_question(raw_text, question, target_language)
+        projections = item.get("projections")
+        risk_flags = item.get("riskFlags")
+        result = answer_document_question(
+            raw_text=raw_text,
+            question=question,
+            target_language=target_language,
+            deterministic_calc=projections,
+            risk_flags=risk_flags
+        )
 
         # Store in DynamoDB question cache
         cached_answers[q_hash] = result["answer"]

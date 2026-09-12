@@ -16,6 +16,7 @@ export interface ProjectionItem {
 }
 
 export interface ProjectionData {
+  engine?: 'compound_penalty';
   status?: string;
   principal: number;
   annualRatePercent: number;
@@ -24,6 +25,84 @@ export interface ProjectionData {
   projections: ProjectionItem[];
   narrative: string;
 }
+
+export interface LoanMilestone {
+  month: number;
+  isLockInActive: boolean;
+  remainingPrincipal: number;
+  foreclosureFee: number;
+  gstOnFee: number;
+  totalForeclosureCost: number;
+  totalToCloseLoan: number;
+  effectivePenaltyPct: number;
+}
+
+export interface LoanCalculationData {
+  engine: 'loan_emi_foreclosure';
+  status?: string;
+  principal: number;
+  annualInterestRatePercent: number;
+  tenureMonths: number;
+  monthlyEmi: number;
+  totalPayment: number;
+  totalInterest: number;
+  foreclosureChargePercent: number;
+  lockInPeriodMonths: number;
+  missedEmiPenalRatePercent: number;
+  penalInterestPerMissedEmi: number;
+  milestones: LoanMilestone[];
+  narrative: string;
+}
+
+export interface TariffSlabItem {
+  label: string;
+  units: number;
+  ratePerUnit: number;
+  charge: number;
+}
+
+export interface TariffCalculationData {
+  engine: 'tiered_power_tariff';
+  status?: string;
+  unitsKwh: number;
+  sanctionedLoadKw: number;
+  slabBreakdown: TariffSlabItem[];
+  energyCharge: number;
+  fixedCharge: number;
+  fuelAdjustmentCharge: number;
+  peakSurcharge: number;
+  electricityDuty: number;
+  dutyPercent: number;
+  totalNetBill: number;
+  averageCostPerUnit: number;
+  narrative: string;
+}
+
+export interface CustomMilestone {
+  day: number;
+  ruleApplied: string;
+  flatFee: number;
+  percentagePenalty: number;
+  totalPenalty: number;
+  totalLiability: number;
+  effectivePenaltyPct: number;
+}
+
+export interface CustomFormulaData {
+  engine: 'custom_formula';
+  status?: string;
+  formulaName: string;
+  formulaDescription: string;
+  baseAmount: number;
+  projections: CustomMilestone[];
+  narrative: string;
+}
+
+export type UnifiedCalculationData =
+  | ProjectionData
+  | LoanCalculationData
+  | TariffCalculationData
+  | CustomFormulaData;
 
 export interface ChatMessage {
   id: string;
@@ -48,7 +127,7 @@ export interface DocumentData {
   translatedExplanation?: string;
   translatedRiskFlags?: RiskFlag[];
   translatedProjectionNarrative?: string;
-  projections?: ProjectionData;
+  projections?: UnifiedCalculationData | any;
   createdAt?: string;
   updatedAt?: string;
   errorMessage?: string;
