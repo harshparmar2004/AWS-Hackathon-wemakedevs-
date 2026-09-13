@@ -172,3 +172,36 @@ export interface NegotiationDraft {
   emailSubject: string;
   emailBody: string;
 }
+
+export type ForgedDocType = 'statutory_notice' | 'settlement_proposal' | 'clause_addendum' | 'consumer_complaint';
+
+export interface ForgedDocument {
+  id: string;
+  type: ForgedDocType;
+  title: string;
+  badge: string;
+  summary: string;
+  statutoryBasis: string;
+  recipientRole: string;
+  content: string;
+  lastUpdatedFromChat?: boolean;
+}
+
+export interface AdaptiveCaseMemory {
+  userProposedOffer?: string;
+  factualGrievance?: string;
+  settlementTerms?: string;
+  disputeDates?: string[];
+  refinementsCount: number;
+  extractedKeywords: string[];
+}
+
+export interface LegalDossier {
+  docId: string;
+  docTitle: string;
+  domain: 'tenancy' | 'loan' | 'power_tariff' | 'ecom_consumer' | 'b2b_saas';
+  memory: AdaptiveCaseMemory;
+  documents: ForgedDocument[];
+  generatedAt: string;
+}
+

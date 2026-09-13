@@ -22,6 +22,7 @@ interface OverviewSectionProps {
   onNewUpload: () => void;
   onOpenSimulator: () => void;
   onOpenArchitecture: () => void;
+  onOpenForge?: () => void;
 }
 
 export const OverviewSection: React.FC<OverviewSectionProps> = ({
@@ -29,6 +30,7 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
   onNewUpload,
   onOpenSimulator,
   onOpenArchitecture,
+  onOpenForge,
 }) => {
   const [activeChartMetric, setActiveChartMetric] = useState<'accuracy' | 'hallucination'>('accuracy');
 
@@ -293,7 +295,7 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
             Complete Citizen Shield
           </span>
           <h2 className="text-xl sm:text-2xl font-bold text-sand-900">
-            5 Groundbreaking Client Systems Powering the App
+            6 Groundbreaking Autonomous Systems Powering the Platform
           </h2>
         </div>
 
@@ -365,36 +367,61 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
           {/* System 5 */}
           <div className="bg-white border border-sand-300/80 rounded-2xl p-5 space-y-3 shadow-xs hover:border-burnt/50 transition-all flex flex-col justify-between">
             <div className="space-y-2">
-              <div className="w-9 h-9 rounded-xl bg-purple-100 text-purple-800 flex items-center justify-center font-bold">
+              <div className="w-9 h-9 rounded-xl bg-teal-100 text-teal-800 flex items-center justify-center font-bold">
                 5
               </div>
-              <h3 className="text-base font-bold text-sand-900">Verified Legal Audit Certificates</h3>
+              <h3 className="text-base font-bold text-sand-900">Autonomous 4-Document Action Dossier</h3>
               <p className="text-xs text-ink-muted leading-relaxed">
-                Generates stamped official markdown audit reports, printable certificates (PDF), and full chat transcript logs to support dispute resolution and tenant negotiation.
+                Forges 4 production-ready legal artifacts (Statutory Notice, Settlement Offer, Contract Addendum, Consumer Forum Petition) across E-Commerce, B2B SaaS, Tenancy, Loans & Utilities.
               </p>
             </div>
-            <span className="text-[11px] font-bold text-purple-700 uppercase tracking-wider flex items-center">
-              <FileCheck className="w-3.5 h-3.5 mr-1" /> Stamped Evidentiary Record
+            <span className="text-[11px] font-bold text-teal-700 uppercase tracking-wider flex items-center">
+              <FileCheck className="w-3.5 h-3.5 mr-1" /> Multi-Domain Action Forge
             </span>
           </div>
 
-          {/* System 6 (Architecture) */}
+          {/* System 6: Adaptive Conversation Learning Engine */}
           <div
-            onClick={onOpenArchitecture}
-            className="bg-sand-900 text-white rounded-2xl p-5 space-y-3 shadow-xs hover:bg-sand-850 cursor-pointer transition-all flex flex-col justify-between"
+            onClick={onOpenForge}
+            className="bg-gradient-to-br from-burnt/10 via-sand-50 to-burnt/5 border-2 border-burnt/30 hover:border-burnt rounded-2xl p-5 space-y-3 shadow-xs hover:shadow-md cursor-pointer transition-all flex flex-col justify-between group"
           >
             <div className="space-y-2">
-              <div className="w-9 h-9 rounded-xl bg-white/10 text-white flex items-center justify-center font-bold">
+              <div className="w-9 h-9 rounded-xl bg-burnt text-white flex items-center justify-center font-bold shadow-xs">
                 6
               </div>
-              <h3 className="text-base font-bold text-white">AWS Step Functions Pipeline</h3>
-              <p className="text-xs text-sand-300 leading-relaxed">
-                6-stage serverless pipeline orchestrating S3, DynamoDB, Bedrock, and Lambda with zero idle cost. Click to inspect live cloud topology.
+              <h3 className="text-base font-bold text-sand-900 group-hover:text-burnt transition-colors">
+                Adaptive Chat Memory & Dynamic Forge
+              </h3>
+              <p className="text-xs text-ink-muted leading-relaxed">
+                As the user chats with the AI, the engine autonomously extracts grievances, deadlines, and financial offers in real time, dynamically rewriting all 4 action documents on the fly!
               </p>
             </div>
-            <span className="text-[11px] font-bold text-burnt-light uppercase tracking-wider flex items-center">
-              <ExternalLink className="w-3.5 h-3.5 mr-1" /> View AWS Architecture Modal
+            <span className="text-[11px] font-bold text-burnt uppercase tracking-wider flex items-center">
+              <Sparkles className="w-3.5 h-3.5 mr-1" /> Real-Time Continuous Learning
             </span>
+          </div>
+
+          {/* System 7 (AWS Architecture) */}
+          <div
+            onClick={onOpenArchitecture}
+            className="bg-sand-900 text-white rounded-2xl p-5 space-y-3 shadow-xs hover:bg-sand-850 cursor-pointer transition-all flex flex-col justify-between md:col-span-2 lg:col-span-3"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="space-y-1">
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 rounded-xl bg-white/10 text-white flex items-center justify-center font-bold text-sm">
+                    7
+                  </div>
+                  <h3 className="text-base font-bold text-white">AWS Step Functions 6-Stage Serverless Pipeline</h3>
+                </div>
+                <p className="text-xs text-sand-300 leading-relaxed max-w-2xl">
+                  Orchestrating Amazon S3, DynamoDB, Bedrock Claude 3.5 Sonnet, and Lambda deterministic Python math with zero idle cost. Click to inspect live cloud topology diagram.
+                </p>
+              </div>
+              <span className="text-xs font-bold text-burnt-light uppercase tracking-wider flex items-center bg-white/10 px-3 py-2 rounded-xl self-start sm:self-auto hover:bg-white/20 transition-colors">
+                <ExternalLink className="w-4 h-4 mr-1.5" /> View Cloud Modal
+              </span>
+            </div>
           </div>
         </div>
       </section>
@@ -469,7 +496,7 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {SAMPLE_DOCUMENTS.map((sample) => (
             <div
               key={sample.id}

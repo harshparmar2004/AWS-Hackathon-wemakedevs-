@@ -280,6 +280,31 @@ function generateGroundedAnswer(
     };
   }
 
+  // Grounded answering for E-Commerce Consumer Grievances
+  const isEcom = doc?.docId?.includes('ecom') || doc?.docType?.toLowerCase().includes('consumer') || doc?.docType?.toLowerCase().includes('commerce');
+  if (isEcom) {
+    if (q.includes('return') || q.includes('replace') || q.includes('refund') || q.includes('window')) {
+      return {
+        answer: `• Return Window Restriction: Clause 14.1 restricts defect complaints to 48 hours from delivery, which conflicts with statutory 7-day e-commerce replacement rights under Consumer Protection (E-Commerce) Rules 2020.\n• Replacement Refusal: Clause 9.3 allows the merchant to unilaterally reject returns and impose an arbitrary ₹1,500 inspection fee.\n• Recommended Action: File formal grievance on National Consumer Helpline (1915) citing unfair contract terms.`,
+      };
+    }
+    if (q.includes('arbitration') || q.includes('jurisdiction') || q.includes('court')) {
+      return {
+        answer: `• Jurisdiction Clause: Clause 18.2 designates foreign arbitration (Singapore/Hong Kong) for domestic sales.\n• Legal Status: Void and unenforceable in India under Section 28 of the Indian Contract Act. Indian consumers retain full right to approach District Consumer Commissions under Section 34 of the Consumer Protection Act 2019.`,
+      };
+    }
+  }
+
+  // Grounded answering for B2B Commercial & SaaS Contracts
+  const isB2B = doc?.docId?.includes('saas') || doc?.docType?.toLowerCase().includes('vendor') || doc?.docType?.toLowerCase().includes('commercial');
+  if (isB2B) {
+    if (q.includes('price') || q.includes('escalat') || q.includes('hike') || q.includes('renew')) {
+      return {
+        answer: `• Price Escalation: Clause 6.4 permits the vendor to unilaterally increase license fees by up to 30% annually without prior approval.\n• Auto-Renewal Lockout: Clause 11.2 locks in automatic renewal unless written termination is served exactly 90 days before expiration.\n• Counter-Strategy: Propose the forged Addendum capping annual increases at maximum CPI/WPI rate (+5% ceiling).`,
+      };
+    }
+  }
+
   // General grounded response
   if (isHindi) {
     return {
@@ -683,6 +708,111 @@ export const SAMPLE_DOCUMENTS: SampleDocument[] = [
       translatedProjectionNarrative:
         '36 महीनों के लिए 11.50% की दर से ₹3,00,000 के ऋण की मासिक किस्त (EMI) ₹9,890 है। कुल ब्याज ₹56,040 है। 12 महीने के लॉक-इन के बाद फोरक्लोज़र पर 5% जुर्माना + 18% GST (₹12,461 अतिरिक्त) लागू है।',
       createdAt: '2026-09-09T09:15:00Z',
+    },
+  },
+  {
+    id: 'sample-ecom-consumer',
+    name: 'E-Commerce Marketplace Dispute (Electronics)',
+    type: 'Consumer Dispute',
+    badge: 'E-Commerce',
+    data: {
+      docId: 'sample-ecom-consumer',
+      status: 'complete',
+      docType: 'E-Commerce Terms of Sale & Invoice',
+      fileName: 'ElectroMart_Invoice_and_Return_Terms.pdf',
+      language: 'english',
+      riskScore: 'high',
+      explanation:
+        'Online marketplace transaction terms for consumer electronics purchase (₹48,999 Smart Display TV). Imposes restrictive 48-hour defect reporting, mandatory non-refundable inspection fees, and foreign dispute jurisdiction designed to frustrate consumer protection under Indian law.',
+      keyDates: [
+        'Delivery Date: 2nd September 2026',
+        'Purported Return Window: Strict 48 hours',
+        'Statutory Replacement Window: 7 calendar days',
+      ],
+      riskFlags: [
+        {
+          clause: 'Clause 9.3 — Unilateral Replacement Denial & Inspection Charge',
+          amount: '₹1,500 non-refundable return fee',
+          why: 'Seller charges an arbitrary inspection fee to process returns for items delivered DOA (Dead on Arrival).',
+        },
+        {
+          clause: 'Clause 14.1 — Artificial 48-Hour Reporting Trap',
+          amount: 'Zero return eligibility after 48h',
+          why: 'Illegally truncates the statutory 7-day e-commerce replacement entitlement mandated by CCPA.',
+        },
+        {
+          clause: 'Clause 18.2 — Foreign Arbitration Lockout',
+          amount: 'SIAC Singapore Jurisdiction',
+          why: 'Forces individual Indian consumers to arbitrate in Singapore for a domestic purchase under Indian law.',
+        },
+      ],
+      projections: {
+        engine: 'custom_formula',
+        formulaName: 'Consumer Statutory Relief Matrix',
+        formulaDescription: 'Damages, statutory refund liability, and consumer forum compensation',
+        baseAmount: 48999,
+        projections: [
+          { day: 1, ruleApplied: 'Prompt Defect Notice Given', flatFee: 0, percentagePenalty: 0, totalPenalty: 0, totalLiability: 48999, effectivePenaltyPct: 0 },
+          { day: 7, ruleApplied: 'Statutory Replacement Denial Surcharge', flatFee: 5000, percentagePenalty: 10, totalPenalty: 9899, totalLiability: 58898, effectivePenaltyPct: 20.2 },
+          { day: 15, ruleApplied: 'Consumer Forum Statutory Claim + Mental Agony', flatFee: 15000, percentagePenalty: 18, totalPenalty: 23819, totalLiability: 72818, effectivePenaltyPct: 48.6 },
+          { day: 30, ruleApplied: 'NCDRC Penal Damages & Exemplary Costs', flatFee: 25000, percentagePenalty: 24, totalPenalty: 36759, totalLiability: 85758, effectivePenaltyPct: 75.0 },
+        ],
+        narrative:
+          'For a defective electronics purchase of ₹48,999, refusal to replace entitles the consumer under the Consumer Protection Act 2019 to claim ₹48,999 refund plus escalating statutory compensation (up to ₹85,758 at Day 30) for unfair trade practices.',
+      },
+      createdAt: '2026-09-11T12:00:00Z',
+    },
+  },
+  {
+    id: 'sample-b2b-saas',
+    name: 'SME Commercial Software Master Agreement',
+    type: 'Commercial Contract',
+    badge: 'B2B SaaS',
+    data: {
+      docId: 'sample-b2b-saas',
+      status: 'complete',
+      docType: 'B2B Master Services Agreement',
+      fileName: 'CloudEnterprise_MSA_2026.pdf',
+      language: 'english',
+      riskScore: 'high',
+      explanation:
+        'Enterprise Master Services Agreement between CloudTech Solutions and an Indian SME for enterprise workflow software (₹75,000 monthly fee). Contains aggressive auto-renewal lock-ins, unilateral price escalations, and extreme liability caps.',
+      keyDates: [
+        'Contract Term: 24 Months',
+        'Auto-Renewal Notice: Strict 90 days prior to term end',
+        'Annual Price Review: Every 12 Months',
+      ],
+      riskFlags: [
+        {
+          clause: 'Clause 6.4 — Unilateral Annual Price Escalation',
+          amount: 'Up to 30% automatic annual hike',
+          why: 'Vendor reserves right to increase annual subscription by 30% without client approval or negotiation.',
+        },
+        {
+          clause: 'Clause 11.2 — 90-Day Auto-Renewal Lockout',
+          amount: '100% full 24-month contract renewal',
+          why: 'Failing to serve written non-renewal notice exactly 90 days prior locks SME into another 2-year commitment.',
+        },
+        {
+          clause: 'Clause 17.5 — Asymmetric Liability Limitation',
+          amount: 'Capped at 1 month service fee (₹75,000)',
+          why: 'Vendor limits liability for data loss or outages to ₹75,000 while customer liability remains uncapped.',
+        },
+      ],
+      projections: {
+        engine: 'custom_formula',
+        formulaName: 'Unilateral Escalation & Lockout Projection',
+        formulaDescription: 'Cumulative liability under 30% auto-escalation across multi-year renewals',
+        baseAmount: 900000,
+        projections: [
+          { day: 365, ruleApplied: 'Year 1 Base Contract Total', flatFee: 0, percentagePenalty: 0, totalPenalty: 0, totalLiability: 900000, effectivePenaltyPct: 0 },
+          { day: 730, ruleApplied: 'Year 2 Automatic 30% Escalation', flatFee: 0, percentagePenalty: 30, totalPenalty: 270000, totalLiability: 1170000, effectivePenaltyPct: 30.0 },
+          { day: 1095, ruleApplied: 'Year 3 Unavoided Auto-Renewal + 30% Hike', flatFee: 0, percentagePenalty: 69, totalPenalty: 621000, totalLiability: 1521000, effectivePenaltyPct: 69.0 },
+        ],
+        narrative:
+          'Under the unilateral 30% price escalation clause, an annual contract fee of ₹9,00,000 compounds to ₹11,70,000 in Year 2 and ₹15,21,000 in Year 3 if the 90-day cancellation window is missed.',
+      },
+      createdAt: '2026-09-12T14:30:00Z',
     },
   },
 ];

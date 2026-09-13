@@ -23,6 +23,7 @@ import {
   Printer,
   Sliders,
   Scale,
+  FileCheck,
 } from 'lucide-react';
 import {
   DocumentData,
@@ -45,12 +46,35 @@ interface DocumentChatProps {
   document: DocumentData;
   activeLanguage: string;
   initialTab?: 'points' | 'chat';
+  onOpenForge?: () => void;
 }
 
 function getSuggestionsForDoc(doc: DocumentData): string[] {
   const engine = doc.projections?.engine;
   const isLoan = engine === 'loan_emi_foreclosure' || doc.docId?.includes('loan') || doc.docType?.toLowerCase().includes('loan');
   const isPower = engine === 'tiered_power_tariff' || doc.docId?.includes('power') || doc.docType?.toLowerCase().includes('electricity') || doc.docType?.toLowerCase().includes('utility');
+  const isEcom = doc.docId?.includes('ecom') || doc.docType?.toLowerCase().includes('commerce') || doc.docType?.toLowerCase().includes('consumer') || doc.docType?.toLowerCase().includes('warranty');
+  const isSaas = doc.docId?.includes('saas') || doc.docType?.toLowerCase().includes('saas') || doc.docType?.toLowerCase().includes('software') || doc.docType?.toLowerCase().includes('subscription');
+
+  if (isEcom) {
+    return [
+      'Is the seller replacement policy valid under CPA 2019?',
+      'Can the manufacturer disclaim warranty for DOA products?',
+      'What is my statutory compensation claim including mental agony?',
+      'What is the mandatory timeline for defect resolution?',
+      'What statutory section applies to defective electronic goods?',
+    ];
+  }
+
+  if (isSaas) {
+    return [
+      'What is my SLA uptime service credit entitlement?',
+      'Is the unilateral 35% price hike legally enforceable?',
+      'What happens to my confidential business data upon termination?',
+      'Can I terminate immediately without paying remaining contract months?',
+      'What is the maximum liability cap for platform outage?',
+    ];
+  }
 
   if (isLoan) {
     return [
@@ -85,8 +109,56 @@ function getDefaultMessagesForDoc(doc: DocumentData): ChatMessage[] {
   const isRental = doc.docId?.includes('rent');
   const isPower = doc.docId?.includes('power') || doc.docId?.includes('bescom');
   const isLoan = doc.docId?.includes('loan') || doc.docId?.includes('hdfc');
+  const isEcom = doc.docId?.includes('ecom') || doc.docType?.toLowerCase().includes('commerce') || doc.docType?.toLowerCase().includes('consumer');
+  const isSaas = doc.docId?.includes('saas') || doc.docType?.toLowerCase().includes('saas') || doc.docType?.toLowerCase().includes('software');
 
   const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  if (isEcom) {
+    return [
+      {
+        id: 'sample-ecom-init',
+        role: 'assistant',
+        text: `Hello! I am your AI Consumer Rights Advocate for **${doc.fileName || doc.docType}**.\n\nAsk me about Consumer Protection Act (CPA 2019) mandates, manufacturer DOA warranty liabilities, or replacement refund enforcement.`,
+        timestamp: now,
+      },
+      {
+        id: 'sample-ecom-q1-user',
+        role: 'user',
+        text: 'The retailer is refusing replacement or refund citing Clause 11.2 7-day replacement window. Can they do this?',
+        timestamp: now,
+      },
+      {
+        id: 'sample-ecom-q1-bot',
+        role: 'assistant',
+        text: `• **Statutory Finding:** Clause 11.2 violates **Section 2(47) of the Consumer Protection Act, 2019 (Unfair Trade Practices)**.\n• **Manufacturer Liability:** Under **Section 84 (Product Liability)**, a manufacturer/seller is strictly liable for manufacturing defects rendering equipment non-functional upon delivery.\n• **Immediate Relief:** You are entitled to a **100% full refund of ₹84,999** or brand-new replacement within 48 hours, plus compensation for mental agony.\n• **Action Available:** You can immediately forge a formal Statutory Legal Notice or Consumer Forum Complaint in the Document Forge tab.`,
+        timestamp: now,
+      },
+    ];
+  }
+
+  if (isSaas) {
+    return [
+      {
+        id: 'sample-saas-init',
+        role: 'assistant',
+        text: `Hello! I am your AI B2B Software Contracts Counsel for **${doc.fileName || doc.docType}**.\n\nAsk me about SLA uptime service credits, unilateral fee hikes, IP ownership, or material breach termination.`,
+        timestamp: now,
+      },
+      {
+        id: 'sample-saas-q1-user',
+        role: 'user',
+        text: 'The vendor hiked subscription fees by 35% and suffered 96.2% uptime. Can we terminate without paying remaining contract months?',
+        timestamp: now,
+      },
+      {
+        id: 'sample-saas-q1-bot',
+        role: 'assistant',
+        text: `• **SLA Breach:** Clause 14.1 guarantees 99.9% monthly uptime. Operating at 96.2% constitutes a **Material Breach** and triggers a 25% SLA Service Credit.\n• **Unilateral Price Escalation:** Clause 8.2 (35% automatic renewal increase) constitutes an unconscionable contract modification without written mutual addendum.\n• **Termination Right:** Under Clause 9.3, you may serve a 30-day Cure Notice. If unrectified, contract terminates with **Zero Acceleration Penalty** and mandatory 7-day data export.\n• **Action Available:** A formal Contract Amendment Addendum and Settlement Offer are ready to be forged in the Document Forge tab.`,
+        timestamp: now,
+      },
+    ];
+  }
 
   if (isRental) {
     return [
@@ -488,6 +560,7 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
   document,
   activeLanguage,
   initialTab = 'points',
+  onOpenForge,
 }) => {
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
     const saved = getStoredDocumentChat(document.docId);
@@ -704,6 +777,18 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
             <span className="hidden md:inline">Certificate</span>
           </button>
 
+          {/* Autonomous Document Forge Action */}
+          {onOpenForge && (
+            <button
+              onClick={onOpenForge}
+              className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-burnt text-white hover:bg-burnt-hover transition-all shadow-2xs"
+              title="Open Autonomous Document Forge & Action Dossier (4 Legal Documents)"
+            >
+              <FileCheck className="w-3.5 h-3.5" />
+              <span>Forge Action Dossier</span>
+            </button>
+          )}
+
           {/* Reset */}
           <button
             onClick={handleReset}
@@ -870,11 +955,23 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
         >
           <div className="bg-white border border-sand-300/80 rounded-xl overflow-hidden flex flex-col h-full min-h-0 shadow-xs">
             {/* Grounding Info Bar */}
-            <div className="px-4 py-2 bg-emerald-50/70 border-b border-emerald-100 text-xs text-emerald-900 flex items-center justify-between flex-shrink-0">
-              <span className="flex items-center space-x-2 font-medium">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-                <span>Fact-grounded responses citing clauses from this document</span>
-              </span>
+            <div className="px-4 py-2 bg-emerald-50/70 border-b border-emerald-100 text-xs text-emerald-900 flex flex-wrap items-center justify-between gap-2 flex-shrink-0">
+              <div className="flex items-center space-x-2.5">
+                <span className="flex items-center space-x-1.5 font-medium">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                  <span>Clause-grounded analysis</span>
+                </span>
+                {onOpenForge && (
+                  <button
+                    onClick={onOpenForge}
+                    className="inline-flex items-center space-x-1 text-[11px] font-bold text-burnt bg-burnt-light/70 hover:bg-burnt-light px-2 py-0.5 rounded border border-burnt/30 transition-colors shadow-2xs"
+                    title="Live conversation updates synchronize with your 4 legal documents"
+                  >
+                    <FileCheck className="w-3 h-3 text-burnt" />
+                    <span>⚡ Chat Evolves 4 Dossiers</span>
+                  </button>
+                )}
+              </div>
               <div className="flex items-center space-x-3 text-xs">
                 <button
                   onClick={() => exportChatTranscript(document.docId || document.fileName || 'document', messages)}

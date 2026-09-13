@@ -11,10 +11,11 @@ import {
   Scale,
   Compass,
   ShieldCheck,
+  FileCheck,
 } from 'lucide-react';
 import { HistoryItem } from '../types';
 
-export type ActiveView = 'overview' | 'upload' | 'key-points' | 'chat' | 'simulator' | 'negotiation' | 'history';
+export type ActiveView = 'overview' | 'upload' | 'forge' | 'key-points' | 'chat' | 'simulator' | 'negotiation' | 'history';
 
 interface SidebarProps {
   currentView: ActiveView;
@@ -226,6 +227,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }`}
             >
               Drafter
+            </span>
+          </button>
+
+          {/* 6b. Autonomous Document Forge & Action Dossier */}
+          <button
+            onClick={() => onChangeView('forge')}
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl font-semibold transition-all ${
+              currentView === 'forge'
+                ? 'bg-white border border-sand-300/80 text-burnt font-bold shadow-xs'
+                : 'text-sand-900 hover:bg-white/60'
+            }`}
+          >
+            <div className="flex items-center space-x-2.5">
+              <FileCheck className={`w-4 h-4 ${currentView === 'forge' ? 'text-burnt' : 'text-sand-800'}`} />
+              <span>Document Forge</span>
+            </div>
+            <span
+              className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+                currentView === 'forge' ? 'bg-burnt text-white' : 'bg-emerald-100 text-emerald-800'
+              }`}
+            >
+              4 Dossiers
             </span>
           </button>
 

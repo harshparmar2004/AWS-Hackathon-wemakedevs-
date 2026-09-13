@@ -5,6 +5,7 @@ import { UploadSection } from './components/UploadSection';
 import { DocumentChat } from './components/DocumentChat';
 import { ScenarioSimulatorView } from './components/ScenarioSimulatorView';
 import { NegotiationView } from './components/NegotiationView';
+import { DocumentForgeView } from './components/DocumentForgeView';
 import { HistoryView } from './components/HistoryView';
 import { ArchitectureModal } from './components/ArchitectureModal';
 import { DocumentData, HistoryItem } from './types';
@@ -14,6 +15,7 @@ import {
   getStoredHistory,
   saveHistoryItem,
   deleteHistoryItem,
+  getStoredDocumentChat,
   SAMPLE_DOCUMENTS,
 } from './services/api';
 import { Loader2 } from 'lucide-react';
@@ -223,6 +225,7 @@ export const App: React.FC = () => {
               {currentView === 'chat' && 'AI Assistant Clause Q&A'}
               {currentView === 'simulator' && 'What-If Scenario Simulator Studio'}
               {currentView === 'negotiation' && 'Citizen Legal Counter-Drafter'}
+              {currentView === 'forge' && 'Autonomous Document Forge & Action Dossier'}
               {currentView === 'history' && 'Chat History & Audits'}
             </span>
 
@@ -288,6 +291,7 @@ export const App: React.FC = () => {
                 onNewUpload={handleNewUpload}
                 onOpenSimulator={() => setCurrentView('simulator')}
                 onOpenArchitecture={() => setIsArchitectureOpen(true)}
+                onOpenForge={() => setCurrentView('forge')}
               />
             ) : currentView === 'upload' ? (
               <UploadSection
@@ -306,6 +310,13 @@ export const App: React.FC = () => {
                 document={activeDocument}
                 onSelectSample={handleSelectSample}
                 onNewUpload={handleNewUpload}
+              />
+            ) : currentView === 'forge' ? (
+              <DocumentForgeView
+                document={activeDocument}
+                chatMessages={activeDocument ? getStoredDocumentChat(activeDocument.docId) : []}
+                onOpenChat={() => setCurrentView('chat')}
+                onSelectSample={handleSelectSample}
               />
             ) : currentView === 'history' ? (
               <HistoryView
@@ -330,6 +341,7 @@ export const App: React.FC = () => {
                 document={activeDocument}
                 activeLanguage={activeDocument.language || 'english'}
                 initialTab={currentView === 'key-points' ? 'points' : 'chat'}
+                onOpenForge={() => setCurrentView('forge')}
               />
             )}
           </div>
