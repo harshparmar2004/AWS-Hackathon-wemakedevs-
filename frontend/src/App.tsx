@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Sidebar, ActiveView } from './components/Sidebar';
+import { OverviewSection } from './components/OverviewSection';
 import { UploadSection } from './components/UploadSection';
 import { DocumentChat } from './components/DocumentChat';
+import { ScenarioSimulatorView } from './components/ScenarioSimulatorView';
+import { NegotiationView } from './components/NegotiationView';
 import { HistoryView } from './components/HistoryView';
 import { ArchitectureModal } from './components/ArchitectureModal';
 import { DocumentData, HistoryItem } from './types';
@@ -16,8 +19,8 @@ import {
 import { Loader2 } from 'lucide-react';
 
 export const App: React.FC = () => {
-  // Start on 'upload' view so users immediately see the simple upload section
-  const [currentView, setCurrentView] = useState<ActiveView>('upload');
+  // Start on 'overview' view so judges & users immediately see the rich Overview & Impact Hub
+  const [currentView, setCurrentView] = useState<ActiveView>('overview');
   const [history, setHistory] = useState<HistoryItem[]>(() => getStoredHistory());
   const [activeDocId, setActiveDocId] = useState<string | null>('sample-rent-blr');
   const [activeDocument, setActiveDocument] = useState<DocumentData | null>(
@@ -214,13 +217,16 @@ export const App: React.FC = () => {
         <header className="h-14 border-b border-sand-200/80 bg-sand-50/90 backdrop-blur-sm px-6 sm:px-8 lg:px-10 flex items-center justify-between sticky top-0 z-10 transition-all flex-shrink-0">
           <div className="flex items-center space-x-3">
             <span className="text-xs sm:text-sm font-bold text-sand-900 tracking-wide uppercase">
-              {currentView === 'upload' && 'Upload Document'}
-              {currentView === 'key-points' && 'Key Points & Summary'}
-              {currentView === 'chat' && 'AI Assistant Q&A'}
-              {currentView === 'history' && 'Chat History'}
+              {currentView === 'overview' && 'Overview & Impact Hub'}
+              {currentView === 'upload' && 'Document Ingestion'}
+              {currentView === 'key-points' && 'Risk Diagnostic & Health'}
+              {currentView === 'chat' && 'AI Assistant Clause Q&A'}
+              {currentView === 'simulator' && 'What-If Scenario Simulator Studio'}
+              {currentView === 'negotiation' && 'Citizen Legal Counter-Drafter'}
+              {currentView === 'history' && 'Chat History & Audits'}
             </span>
 
-            {activeDocument && (currentView === 'chat' || currentView === 'key-points') && (
+            {activeDocument && currentView !== 'overview' && currentView !== 'upload' && (
               <span className="text-xs sm:text-[13px] text-ink-muted font-medium inline-flex items-center px-2.5 py-1 rounded-md bg-sand-200/70 border border-sand-300/50">
                 {activeDocument.fileName || activeDocument.docType}
               </span>
@@ -233,7 +239,7 @@ export const App: React.FC = () => {
                 onClick={handleNewUpload}
                 className="text-xs sm:text-sm font-bold bg-burnt hover:bg-burnt-hover text-white px-3.5 py-1.5 rounded-lg shadow-xs transition-all flex items-center space-x-1.5"
               >
-                <span>+ Upload Document</span>
+                <span>+ Ingest Document</span>
               </button>
             )}
 
@@ -276,12 +282,30 @@ export const App: React.FC = () => {
                   </p>
                 </div>
               </div>
+            ) : currentView === 'overview' ? (
+              <OverviewSection
+                onSelectSample={handleSelectSample}
+                onNewUpload={handleNewUpload}
+                onOpenSimulator={() => setCurrentView('simulator')}
+                onOpenArchitecture={() => setIsArchitectureOpen(true)}
+              />
             ) : currentView === 'upload' ? (
               <UploadSection
                 onUploadStart={handleUploadStart}
                 onSelectSample={handleSelectSample}
                 isProcessing={isProcessing}
                 processingStatusText={processingStatusText}
+              />
+            ) : currentView === 'simulator' ? (
+              <ScenarioSimulatorView
+                document={activeDocument}
+                onSelectSample={handleSelectSample}
+              />
+            ) : currentView === 'negotiation' ? (
+              <NegotiationView
+                document={activeDocument}
+                onSelectSample={handleSelectSample}
+                onNewUpload={handleNewUpload}
               />
             ) : currentView === 'history' ? (
               <HistoryView
