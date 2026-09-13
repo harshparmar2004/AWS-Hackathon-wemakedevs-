@@ -6,12 +6,12 @@ import {
   Sparkles,
   CheckCircle2,
   Clock,
-  MessageSquare,
   Sliders,
   Scale,
   Compass,
   ShieldCheck,
   FileCheck,
+  Cloud,
 } from 'lucide-react';
 import { HistoryItem } from '../types';
 
@@ -157,25 +157,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </span>
           </button>
 
-          {/* 4. AI Clause Q&A */}
+          {/* 4. AI Document Cloud Chat */}
           <button
             onClick={() => onChangeView('chat')}
             className={`w-full flex items-center justify-between px-3 py-2 rounded-xl font-semibold transition-all ${
               currentView === 'chat'
-                ? 'bg-white border border-sand-300/80 text-burnt font-bold shadow-xs'
+                ? 'bg-white border border-sky-300/80 text-sky-700 font-bold shadow-xs'
                 : 'text-sand-900 hover:bg-white/60'
             }`}
           >
             <div className="flex items-center space-x-2.5">
-              <MessageSquare className={`w-4 h-4 ${currentView === 'chat' ? 'text-burnt' : 'text-sand-800'}`} />
-              <span className="text-sm">Clause Q&A Chat</span>
+              <Cloud className={`w-4 h-4 ${currentView === 'chat' ? 'text-sky-500' : 'text-sand-800'}`} />
+              <span className="text-sm">Document Cloud</span>
             </div>
             <span
               className={`text-xs px-2 py-0.5 rounded font-bold ${
-                currentView === 'chat' ? 'bg-burnt text-white' : 'bg-sand-200 text-sand-800'
+                currentView === 'chat' ? 'bg-sky-500 text-white' : 'bg-sky-100 text-sky-800'
               }`}
             >
-              Grounded
+              Cloud
             </span>
           </button>
 

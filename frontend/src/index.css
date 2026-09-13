@@ -4,12 +4,37 @@
 
 @layer base {
   html {
-    font-size: 105%; /* 5% larger base scale for crisp, effortless readability */
+    font-size: 94%; /* Sleek compact scale so all UI elements and cards fit comfortably without bulk */
   }
   body {
     @apply bg-sand-100 text-ink font-sans antialiased;
     background-color: #F7F4EE;
   }
+}
+
+/* Ethereal Cloud UI Styling */
+.cloud-glass-canvas {
+  background: radial-gradient(circle at 10% 10%, rgba(240, 249, 255, 0.8) 0%, rgba(255, 255, 255, 0.95) 45%, rgba(245, 243, 255, 0.7) 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(186, 230, 253, 0.5);
+  box-shadow: 0 20px 45px -15px rgba(56, 189, 248, 0.12), 0 0 25px 0 rgba(255, 255, 255, 0.8) inset;
+}
+
+.cloud-bubble-bot {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(224, 242, 254, 0.9);
+  box-shadow: 0 8px 20px -6px rgba(186, 230, 253, 0.35);
+}
+
+.cloud-dropzone {
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(240, 249, 255, 0.4),
+    rgba(240, 249, 255, 0.4) 10px,
+    rgba(255, 255, 255, 0.8) 10px,
+    rgba(255, 255, 255, 0.8) 20px
+  );
 }
 
 @media print {

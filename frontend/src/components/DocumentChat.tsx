@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Send,
-  Sparkles,
-  Bot,
   User,
   Loader2,
   Copy,
@@ -15,6 +13,9 @@ import {
   FileDown,
   Printer,
   FileCheck,
+  Cloud,
+  CloudUpload,
+  Paperclip,
 } from 'lucide-react';
 import { DocumentData, ChatMessage } from '../types';
 import { askDocumentQuestion, getStoredDocumentChat, saveDocumentChat } from '../services/api';
@@ -22,82 +23,45 @@ import { VoiceAssistant } from './VoiceAssistant';
 import { downloadAuditReport, exportChatTranscript, printAuditCertificate } from '../services/reportGenerator';
 
 interface DocumentChatProps {
-  document: DocumentData;
+  document: DocumentData | null;
   activeLanguage: string;
   onOpenForge?: () => void;
+  onUploadStart?: (
+    fileBase64: string,
+    fileName: string,
+    fileType: 'pdf' | 'image',
+    language: string
+  ) => void;
+  isProcessing?: boolean;
+  processingStatusText?: string;
 }
 
-function getSuggestionsForDoc(doc: DocumentData): string[] {
-  const engine = doc.projections?.engine;
-  const isLoan = engine === 'loan_emi_foreclosure' || doc.docId?.includes('loan') || doc.docType?.toLowerCase().includes('loan');
-  const isPower = engine === 'tiered_power_tariff' || doc.docId?.includes('power') || doc.docType?.toLowerCase().includes('electricity') || doc.docType?.toLowerCase().includes('utility');
-  const isEcom = doc.docId?.includes('ecom') || doc.docType?.toLowerCase().includes('commerce') || doc.docType?.toLowerCase().includes('consumer') || doc.docType?.toLowerCase().includes('warranty');
-  const isSaas = doc.docId?.includes('saas') || doc.docType?.toLowerCase().includes('saas') || doc.docType?.toLowerCase().includes('software') || doc.docType?.toLowerCase().includes('subscription');
+function getDefaultMessagesForDoc(doc?: DocumentData | null): ChatMessage[] {
+  const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-  if (isEcom) {
+  if (!doc) {
     return [
-      'Is the seller replacement policy valid under CPA 2019?',
-      'Can the manufacturer disclaim warranty for DOA products?',
-      'What is my statutory compensation claim including mental agony?',
-      'What is the mandatory timeline for defect resolution?',
-      'What statutory section applies to defective electronic goods?',
+      {
+        id: 'welcome-empty',
+        role: 'assistant',
+        text: `☁️ Welcome to the AI Document Cloud!\n\nUpload any PDF contract, lease, loan sanction, or tariff bill directly here to begin your clause-grounded legal analysis.`,
+        timestamp: now,
+      },
     ];
   }
 
-  if (isSaas) {
-    return [
-      'What is my SLA uptime service credit entitlement?',
-      'Is the unilateral 35% price hike legally enforceable?',
-      'What happens to my confidential business data upon termination?',
-      'Can I terminate immediately without paying remaining contract months?',
-      'What is the maximum liability cap for platform outage?',
-    ];
-  }
-
-  if (isLoan) {
-    return [
-      'What is my exact monthly EMI and total interest?',
-      'Can I foreclose or prepay my loan early without penalty?',
-      'What happens if I miss an EMI payment or NACH bounces?',
-      'What is the lock-in period for prepayment?',
-      'What is the total repayment amount over 36 months?',
-    ];
-  }
-
-  if (isPower) {
-    return [
-      'How is my electricity bill calculated across tiered slabs?',
-      'What is the fuel adjustment (FAC) and fixed demand charge?',
-      'What is the exact disconnection notice and late fee surcharge?',
-      'How much state electricity duty and peak surcharge is applied?',
-      'What is the average cost per kWh unit on this bill?',
-    ];
-  }
-
-  return [
-    'What happens if I delay rent payment by 15 days?',
-    'What is the notice period and lock-in clause?',
-    'What non-refundable deductions are taken from my deposit?',
-    'Can the owner increase rent without notice?',
-    'What are the termination conditions?',
-  ];
-}
-
-function getDefaultMessagesForDoc(doc: DocumentData): ChatMessage[] {
   const isRental = doc.docId?.includes('rent');
   const isPower = doc.docId?.includes('power') || doc.docId?.includes('bescom');
   const isLoan = doc.docId?.includes('loan') || doc.docId?.includes('hdfc');
   const isEcom = doc.docId?.includes('ecom') || doc.docType?.toLowerCase().includes('commerce') || doc.docType?.toLowerCase().includes('consumer');
   const isSaas = doc.docId?.includes('saas') || doc.docType?.toLowerCase().includes('saas') || doc.docType?.toLowerCase().includes('software');
 
-  const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
   if (isEcom) {
     return [
       {
         id: 'sample-ecom-init',
         role: 'assistant',
-        text: `Hello! I am your AI Consumer Rights Advocate for **${doc.fileName || doc.docType}**.\n\nAsk me about Consumer Protection Act (CPA 2019) mandates, manufacturer DOA warranty liabilities, or replacement refund enforcement.`,
+        text: `☁️ AI Consumer Protection Cloud active for **${doc.fileName || doc.docType}**.\n\nAsk any question regarding Consumer Protection Act (CPA 2019) mandates, manufacturer DOA liabilities, or refund enforcement.`,
         timestamp: now,
       },
       {
@@ -120,7 +84,7 @@ function getDefaultMessagesForDoc(doc: DocumentData): ChatMessage[] {
       {
         id: 'sample-saas-init',
         role: 'assistant',
-        text: `Hello! I am your AI B2B Software Contracts Counsel for **${doc.fileName || doc.docType}**.\n\nAsk me about SLA uptime service credits, unilateral fee hikes, IP ownership, or material breach termination.`,
+        text: `☁️ AI B2B Software Cloud active for **${doc.fileName || doc.docType}**.\n\nAsk about SLA uptime service credits, unilateral fee hikes, IP ownership, or material breach termination.`,
         timestamp: now,
       },
       {
@@ -132,7 +96,7 @@ function getDefaultMessagesForDoc(doc: DocumentData): ChatMessage[] {
       {
         id: 'sample-saas-q1-bot',
         role: 'assistant',
-        text: `• **SLA Breach:** Clause 14.1 guarantees 99.9% monthly uptime. Operating at 96.2% constitutes a **Material Breach** and triggers a 25% SLA Service Credit.\n• **Unilateral Price Escalation:** Clause 8.2 (35% automatic renewal increase) constitutes an unconscionable contract modification without written mutual addendum.\n• **Termination Right:** Under Clause 9.3, you may serve a 30-day Cure Notice. If unrectified, contract terminates with **Zero Acceleration Penalty** and mandatory 7-day data export.\n• **Action Available:** A formal Contract Amendment Addendum and Settlement Offer are ready to be forged in the Document Forge tab.`,
+        text: `• **SLA Breach:** Clause 14.1 guarantees 99.9% monthly uptime. Operating at 96.2% constitutes a **Material Breach** and triggers a 25% SLA Service Credit.\n• **Unilateral Price Escalation:** Clause 8.2 (35% automatic renewal increase) constitutes an unconscionable contract modification without written mutual addendum.\n• **Termination Right:** Under Clause 9.3, you may serve a 30-day Cure Notice. If unrectified, contract terminates with **Zero Acceleration Penalty** and mandatory 7-day data export.`,
         timestamp: now,
       },
     ];
@@ -143,7 +107,7 @@ function getDefaultMessagesForDoc(doc: DocumentData): ChatMessage[] {
       {
         id: 'sample-q1-bot-init',
         role: 'assistant',
-        text: `Hello! I am your AI Assistant for **${doc.fileName || doc.docType}**.\n\nYou can ask me any point-wise question about penalties, lock-in terms, deadlines, or security deposits. I will answer strictly based on the clauses in this document.`,
+        text: `☁️ AI Contract Cloud initialized for **${doc.fileName || doc.docType}**.\n\nI will answer point-wise with exact clause citations grounded strictly in this agreement.`,
         timestamp: now,
       },
       {
@@ -166,7 +130,7 @@ function getDefaultMessagesForDoc(doc: DocumentData): ChatMessage[] {
       {
         id: 'sample-q1-bot-init',
         role: 'assistant',
-        text: `Hello! I am your AI Utility Tariff Assistant for **${doc.fileName || doc.docType}**.\n\nAsk me about peak-hour tariffs, power factor penalties, or disconnection notice timelines.`,
+        text: `☁️ AI Utility Tariff Cloud active for **${doc.fileName || doc.docType}**.\n\nAsk about tiered slabs, fixed charges, fuel adjustment (FAC), or disconnection notice timelines.`,
         timestamp: now,
       },
       {
@@ -189,7 +153,7 @@ function getDefaultMessagesForDoc(doc: DocumentData): ChatMessage[] {
       {
         id: 'sample-q1-bot-init',
         role: 'assistant',
-        text: `Hello! I am your AI Financial Contract Assistant for **${doc.fileName || doc.docType}**.\n\nAsk me about EMI defaults, penal interest, or prepayment foreclosure charges.`,
+        text: `☁️ AI Loan Contract Cloud active for **${doc.fileName || doc.docType}**.\n\nAsk about EMI calculations, penal interest, or prepayment foreclosure charges.`,
         timestamp: now,
       },
       {
@@ -211,7 +175,7 @@ function getDefaultMessagesForDoc(doc: DocumentData): ChatMessage[] {
     {
       id: 'welcome',
       role: 'assistant',
-      text: `Hello! I am your AI Assistant for **${doc.fileName || doc.docType}**.\n\nYou can ask me any question about penalties, lock-in terms, deadlines, or fees. I will give you a **point-wise answer with exact clause citations** grounded strictly in this document.`,
+      text: `☁️ AI Cloud Assistant active for **${doc.fileName || doc.docType}**.\n\nAsk any question about penalties, lock-in terms, deadlines, or fees for point-wise answers with exact clause citations.`,
       timestamp: now,
     },
   ];
@@ -221,10 +185,15 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
   document,
   activeLanguage,
   onOpenForge,
+  onUploadStart,
+  isProcessing = false,
+  processingStatusText,
 }) => {
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
-    const saved = getStoredDocumentChat(document.docId);
-    if (saved && saved.length > 0) return saved;
+    if (document) {
+      const saved = getStoredDocumentChat(document.docId);
+      if (saved && saved.length > 0) return saved;
+    }
     return getDefaultMessagesForDoc(document);
   });
 
@@ -232,24 +201,68 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [chatLanguage, setChatLanguage] = useState<string>(activeLanguage || 'english');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [isDragOver, setIsDragOver] = useState<boolean>(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll chat to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isLoading]);
+  }, [messages, isLoading, isProcessing]);
 
   // Sync when document changes
   useEffect(() => {
-    const saved = getStoredDocumentChat(document.docId);
-    if (saved && saved.length > 0) {
-      setMessages(saved);
+    if (document) {
+      const saved = getStoredDocumentChat(document.docId);
+      if (saved && saved.length > 0) {
+        setMessages(saved);
+      } else {
+        const defaults = getDefaultMessagesForDoc(document);
+        setMessages(defaults);
+        saveDocumentChat(document.docId, defaults);
+      }
     } else {
-      const defaults = getDefaultMessagesForDoc(document);
-      setMessages(defaults);
-      saveDocumentChat(document.docId, defaults);
+      setMessages(getDefaultMessagesForDoc(null));
     }
-  }, [document.docId]);
+  }, [document?.docId]);
+
+  const handleFileSelection = (file: File) => {
+    if (!onUploadStart) return;
+    if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
+      alert('Please upload a valid image or PDF document.');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      alert('File size must be under 10MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      const fileType = file.type === 'application/pdf' ? 'pdf' : 'image';
+      onUploadStart(base64, file.name, fileType, chatLanguage);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileSelection(e.dataTransfer.files[0]);
+    }
+  };
 
   const handleSend = async (questionText?: string) => {
     const q = (questionText || inputQuestion).trim();
@@ -264,16 +277,18 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
 
     const updatedWithUser = [...messages, userMsg];
     setMessages(updatedWithUser);
-    saveDocumentChat(document.docId, updatedWithUser);
+    if (document) {
+      saveDocumentChat(document.docId, updatedWithUser);
+    }
     setInputQuestion('');
     setIsLoading(true);
 
     try {
       const res = await askDocumentQuestion(
-        document.docId,
+        document?.docId || 'cloud-doc',
         q,
         chatLanguage,
-        document
+        document || undefined
       );
 
       const botMsg: ChatMessage = {
@@ -286,7 +301,9 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
 
       const finalMessages = [...updatedWithUser, botMsg];
       setMessages(finalMessages);
-      saveDocumentChat(document.docId, finalMessages);
+      if (document) {
+        saveDocumentChat(document.docId, finalMessages);
+      }
     } catch (e: any) {
       const errorMsg: ChatMessage = {
         id: `err-${Date.now()}`,
@@ -296,7 +313,9 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
       };
       const finalMessages = [...updatedWithUser, errorMsg];
       setMessages(finalMessages);
-      saveDocumentChat(document.docId, finalMessages);
+      if (document) {
+        saveDocumentChat(document.docId, finalMessages);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -313,251 +332,310 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
       {
         id: 'welcome',
         role: 'assistant',
-        text: `Chat reset. Ask any point-wise question about **${document.fileName || document.docType}**.`,
+        text: `☁️ Cloud chat reset. Ask any question about **${document?.fileName || document?.docType || 'your document'}**.`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       },
     ];
     setMessages(resetMsgs);
-    saveDocumentChat(document.docId, resetMsgs);
+    if (document) {
+      saveDocumentChat(document.docId, resetMsgs);
+    }
   };
 
   const isHindi = chatLanguage === 'hindi';
 
   return (
-    <div className="w-full max-w-[1560px] mx-auto h-full flex flex-col space-y-3 min-h-0 animate-in fade-in duration-200">
-      {/* 1. Header Command Banner (Full-Width, Clear Controls) */}
-      <div className="bg-white border border-sand-300/80 rounded-2xl px-5 py-3.5 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs flex-shrink-0">
-        <div className="flex items-center space-x-3.5">
-          <div className="w-10 h-10 rounded-xl bg-burnt text-white flex items-center justify-center flex-shrink-0 shadow-xs">
-            <Bot className="w-5 h-5" />
+    <div
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className="w-full max-w-[1560px] mx-auto h-full flex flex-col min-h-0 relative cloud-glass-canvas rounded-3xl p-3 sm:p-4 animate-in fade-in duration-200 overflow-hidden"
+    >
+      {/* Hidden File Input for Direct In-Chat Upload */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={(e) => {
+          if (e.target.files && e.target.files[0]) {
+            handleFileSelection(e.target.files[0]);
+          }
+        }}
+        accept="application/pdf,image/*"
+        className="hidden"
+      />
+
+      {/* Drag & Drop Cloud Overlay */}
+      {isDragOver && (
+        <div className="absolute inset-0 bg-sky-500/15 backdrop-blur-md z-30 flex flex-col items-center justify-center p-6 border-2 border-dashed border-sky-400 rounded-3xl animate-in fade-in duration-150">
+          <div className="bg-white/90 p-6 rounded-3xl shadow-xl border border-sky-200 text-center space-y-2.5 max-w-md">
+            <CloudUpload className="w-12 h-12 text-sky-500 mx-auto animate-bounce" />
+            <h3 className="text-base font-bold text-sand-900">Drop Document Into Cloud</h3>
+            <p className="text-xs text-ink-muted">
+              Release file to instantly ingest to Amazon S3 & Bedrock Claude
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* 1. Sleek Cloud Header Bar (Compact & High Information Density) */}
+      <div className="bg-white/85 backdrop-blur-md border border-sky-100 rounded-2xl px-4 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-2xs flex-shrink-0">
+        <div className="flex items-center space-x-3">
+          <div className="relative w-8 h-8 rounded-xl bg-gradient-to-br from-sky-400 to-indigo-500 text-white flex items-center justify-center flex-shrink-0 shadow-xs">
+            <Cloud className="w-4.5 h-4.5" />
+            <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-400 rounded-full ring-2 ring-white" />
           </div>
           <div>
-            <div className="flex items-center space-x-2.5">
-              <h1 className="text-base sm:text-lg font-bold text-sand-900 leading-tight">
-                {document.fileName || document.docType}
+            <div className="flex items-center space-x-2">
+              <h1 className="text-sm sm:text-base font-bold text-sand-900 leading-tight">
+                {document?.fileName || document?.docType || 'AI Document Cloud'}
               </h1>
-              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-sand-200 text-sand-800 uppercase tracking-wide">
-                {document.docType?.split(' ')[0] || 'Document'}
-              </span>
+              {document?.docType && (
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 uppercase tracking-wide">
+                  {document.docType.split(' ')[0]}
+                </span>
+              )}
             </div>
-            <p className="text-xs sm:text-sm text-ink-muted mt-0.5">
-              Dedicated Clause-Grounded AI Assistant · Strict Citations & Zero Hallucination
+            <p className="text-[11px] sm:text-xs text-ink-muted">
+              AWS Bedrock Claude 3.5 Sonnet · Direct Document Cloud Ingestion
             </p>
           </div>
         </div>
 
-        {/* Action Controls */}
-        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-          {/* Language Switcher */}
-          <button
-            onClick={() => setChatLanguage(isHindi ? 'english' : 'hindi')}
-            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold border border-sand-300 bg-sand-50 hover:border-burnt text-sand-900 transition-all shadow-2xs"
-          >
-            <Languages className="w-4 h-4 text-burnt" />
-            <span>{isHindi ? 'हिंदी (Hindi)' : 'English'}</span>
-          </button>
-
-          {/* Download Verified Legal Audit Report */}
-          <button
-            onClick={() => downloadAuditReport(document, messages)}
-            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold border border-sand-300 bg-sand-50 hover:bg-burnt-light/50 hover:border-burnt text-sand-900 transition-all shadow-2xs"
-            title="Download Verified Legal Audit Report (.md)"
-          >
-            <Download className="w-4 h-4 text-burnt" />
-            <span className="hidden md:inline">Audit Report</span>
-          </button>
-
-          {/* Print Audit Certificate */}
-          <button
-            onClick={() => printAuditCertificate(document)}
-            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold border border-sand-300 bg-sand-50 hover:bg-sand-100 text-sand-800 transition-all shadow-2xs"
-            title="Print or Save Official Legal Audit Certificate (PDF)"
-          >
-            <Printer className="w-4 h-4 text-ink-muted" />
-            <span className="hidden md:inline">Certificate</span>
-          </button>
-
-          {/* Autonomous Document Forge Action */}
-          {onOpenForge && (
+        {/* Action Controls & Direct Cloud Upload Button */}
+        <div className="flex flex-wrap items-center gap-1.5 self-start sm:self-auto">
+          {/* Direct Cloud Upload Button */}
+          {onUploadStart && (
             <button
-              onClick={onOpenForge}
-              className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold bg-burnt text-white hover:bg-burnt-hover transition-all shadow-xs"
-              title="Open Autonomous Document Forge & Action Dossier (4 Legal Documents)"
+              onClick={() => fileInputRef.current?.click()}
+              className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-sky-500 hover:bg-sky-600 text-white shadow-2xs transition-all"
+              title="Upload any PDF or image document directly from here"
             >
-              <FileCheck className="w-4 h-4" />
-              <span>Forge Action Dossier</span>
+              <CloudUpload className="w-3.5 h-3.5" />
+              <span>Upload Document</span>
             </button>
           )}
 
-          {/* Reset Conversation */}
+          {/* Language Switcher */}
+          <button
+            onClick={() => setChatLanguage(isHindi ? 'english' : 'hindi')}
+            className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold border border-sand-300/80 bg-white hover:border-burnt text-sand-900 transition-all shadow-2xs"
+          >
+            <Languages className="w-3.5 h-3.5 text-burnt" />
+            <span>{isHindi ? 'हिंदी' : 'English'}</span>
+          </button>
+
+          {/* Audit Report Export */}
+          {document && (
+            <button
+              onClick={() => downloadAuditReport(document, messages)}
+              className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold border border-sand-300/80 bg-white hover:bg-burnt-light/50 hover:border-burnt text-sand-900 transition-all shadow-2xs"
+              title="Download Verified Audit Report (.md)"
+            >
+              <Download className="w-3.5 h-3.5 text-burnt" />
+              <span className="hidden md:inline">Report</span>
+            </button>
+          )}
+
+          {/* Print Certificate */}
+          {document && (
+            <button
+              onClick={() => printAuditCertificate(document)}
+              className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold border border-sand-300/80 bg-white hover:bg-sand-100 text-sand-800 transition-all shadow-2xs"
+              title="Print Legal Audit Certificate (PDF)"
+            >
+              <Printer className="w-3.5 h-3.5 text-ink-muted" />
+              <span className="hidden lg:inline">Certificate</span>
+            </button>
+          )}
+
+          {/* Forge 4 Dossiers */}
+          {onOpenForge && document && (
+            <button
+              onClick={onOpenForge}
+              className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl text-xs font-bold bg-burnt text-white hover:bg-burnt-hover transition-all shadow-2xs"
+              title="Open Autonomous Document Forge (4 Legal Documents)"
+            >
+              <FileCheck className="w-3.5 h-3.5" />
+              <span>Forge Dossier</span>
+            </button>
+          )}
+
+          {/* Reset */}
           <button
             onClick={handleReset}
-            className="p-2 rounded-xl border border-sand-300 bg-sand-50 hover:bg-sand-100 text-ink-muted transition-colors shadow-2xs"
+            className="p-1.5 rounded-xl border border-sand-300/80 bg-white hover:bg-sand-100 text-ink-muted transition-colors shadow-2xs"
             title="Reset conversation"
           >
-            <RotateCcw className="w-4 h-4" />
+            <RotateCcw className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
 
-      {/* 2. Full-Width Dedicated Chat Box Workspace */}
-      <div className="bg-white border border-sand-300/80 rounded-2xl overflow-hidden flex flex-col flex-1 min-h-0 shadow-xs">
-        {/* Grounding Info Bar */}
-        <div className="px-5 py-2.5 bg-emerald-50/70 border-b border-emerald-100 text-xs sm:text-sm text-emerald-950 flex flex-wrap items-center justify-between gap-3 flex-shrink-0">
-          <div className="flex items-center space-x-3">
-            <span className="flex items-center space-x-1.5 font-bold">
-              <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-              <span>Strict Clause Citations (Bedrock Claude 3.5 Sonnet)</span>
-            </span>
-            {onOpenForge && (
-              <button
-                onClick={onOpenForge}
-                className="inline-flex items-center space-x-1 text-xs font-bold text-burnt bg-burnt-light/80 hover:bg-burnt-light px-2.5 py-0.5 rounded-md border border-burnt/30 transition-colors shadow-2xs"
-                title="Every conversation message automatically evolves your 4 Legal Action Dossiers in real time"
-              >
-                <FileCheck className="w-3.5 h-3.5 text-burnt" />
-                <span>⚡ Real-Time Chat Memory Sync Active</span>
-              </button>
-            )}
-          </div>
-          <div className="flex items-center space-x-3 text-xs text-ink-muted font-medium">
+      {/* 2. Cloud Grounding Status Bar */}
+      <div className="px-3.5 py-1.5 my-2 bg-white/70 backdrop-blur-sm border border-sky-100/80 rounded-xl text-xs text-sky-950 flex flex-wrap items-center justify-between gap-2 flex-shrink-0">
+        <div className="flex items-center space-x-2">
+          <span className="flex items-center space-x-1 font-semibold text-sky-900">
+            <ShieldCheck className="w-3.5 h-3.5 text-sky-600 flex-shrink-0" />
+            <span>Strict Clause-Grounded AI</span>
+          </span>
+          {onOpenForge && (
             <button
-              onClick={() => exportChatTranscript(document.docId || document.fileName || 'document', messages)}
-              className="text-emerald-800 hover:text-emerald-950 font-bold flex items-center space-x-1 transition-colors px-2 py-0.5 rounded hover:bg-emerald-100/60"
-              title="Export complete conversation history (.txt)"
+              onClick={onOpenForge}
+              className="inline-flex items-center space-x-1 text-[11px] font-bold text-burnt bg-burnt-light/80 hover:bg-burnt-light px-2 py-0.5 rounded border border-burnt/30 transition-colors shadow-2xs"
+            >
+              <FileCheck className="w-3 h-3 text-burnt" />
+              <span>⚡ Live Memory Active</span>
+            </button>
+          )}
+        </div>
+        <div className="flex items-center space-x-3 text-xs text-ink-muted">
+          {document && (
+            <button
+              onClick={() => exportChatTranscript(document.docId || 'document', messages)}
+              className="text-sky-800 hover:text-sky-950 font-semibold flex items-center space-x-1 transition-colors px-1.5 py-0.5 rounded hover:bg-sky-100/50"
+              title="Export conversation history (.txt)"
             >
               <FileDown className="w-3.5 h-3.5" />
-              <span>Export Transcript</span>
+              <span>Export Chat</span>
             </button>
-            <span className="flex items-center">
-              <Clock className="w-3.5 h-3.5 mr-1" />
-              {messages.length} messages
-            </span>
+          )}
+          <span className="flex items-center">
+            <Clock className="w-3 h-3 mr-1" />
+            {messages.length} msgs
+          </span>
+        </div>
+      </div>
+
+      {/* Cloud Processing Banner (When uploading document) */}
+      {isProcessing && (
+        <div className="my-2 p-3 bg-white/90 border border-sky-200 rounded-2xl flex items-center space-x-3 shadow-xs flex-shrink-0">
+          <Loader2 className="w-5 h-5 text-sky-500 animate-spin flex-shrink-0" />
+          <div className="flex-1">
+            <div className="text-xs font-bold text-sand-900">Ingesting Document into AWS Bedrock Cloud...</div>
+            <div className="text-[11px] text-sky-700 font-medium">{processingStatusText || 'Stage 1/6: S3 storage & Claude clause extraction'}</div>
           </div>
         </div>
+      )}
 
-        {/* Quick-Ask Suggestion Chips */}
-        <div className="px-4 py-2 bg-sand-50/80 border-b border-sand-200/80 overflow-x-auto flex items-center space-x-2 flex-shrink-0">
-          <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-ink-muted flex items-center whitespace-nowrap">
-            <Sparkles className="w-3.5 h-3.5 mr-1.5 text-burnt" />
-            Quick Prompts:
-          </span>
-          {getSuggestionsForDoc(document).map((sug, idx) => (
-            <button
-              key={idx}
-              onClick={() => handleSend(sug)}
-              disabled={isLoading}
-              className="text-xs sm:text-sm font-semibold bg-white hover:bg-burnt-light/60 border border-sand-300 hover:border-burnt text-sand-800 px-3 py-1 rounded-full whitespace-nowrap transition-colors flex-shrink-0 shadow-2xs"
+      {/* 3. Extended Length Cloud Messages Feed */}
+      <div className="flex-1 min-h-0 overflow-y-auto px-2 sm:px-4 py-3 space-y-3">
+        {messages.map((m) => {
+          const isUser = m.role === 'user';
+
+          return (
+            <div
+              key={m.id}
+              className={`flex items-start space-x-2.5 ${isUser ? 'justify-end' : 'justify-start'}`}
             >
-              {sug}
-            </button>
-          ))}
-        </div>
+              {!isUser && (
+                <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-sky-400 to-indigo-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5 shadow-2xs">
+                  <Cloud className="w-4 h-4" />
+                </div>
+              )}
 
-        {/* Messages Feed (Full-Width, Spacious & High Contrast) */}
-        <div className="flex-1 min-h-0 p-4 sm:p-6 overflow-y-auto space-y-4">
-          {messages.map((m) => {
-            const isUser = m.role === 'user';
-
-            return (
               <div
-                key={m.id}
-                className={`flex items-start space-x-3 ${isUser ? 'justify-end' : 'justify-start'}`}
+                className={`max-w-[85%] sm:max-w-[78%] rounded-2xl px-4 py-3 text-xs sm:text-sm leading-relaxed ${
+                  isUser
+                    ? 'bg-gradient-to-r from-burnt to-burnt-hover text-white rounded-tr-xs shadow-xs'
+                    : 'cloud-bubble-bot text-sand-900 rounded-tl-xs space-y-1.5'
+                }`}
               >
-                {!isUser && (
-                  <div className="w-8 h-8 rounded-xl bg-burnt text-white flex items-center justify-center flex-shrink-0 mt-0.5 shadow-2xs">
-                    <Bot className="w-4.5 h-4.5" />
-                  </div>
-                )}
-
+                <div className="whitespace-pre-line leading-relaxed">
+                  {m.text}
+                </div>
                 <div
-                  className={`max-w-[85%] sm:max-w-[78%] rounded-2xl px-4 sm:px-5 py-3 text-sm sm:text-base leading-relaxed ${
-                    isUser
-                      ? 'bg-burnt text-white font-normal rounded-tr-xs shadow-xs'
-                      : 'bg-sand-50/90 border border-sand-200/80 text-sand-900 rounded-tl-xs space-y-2 shadow-2xs'
+                  className={`flex items-center justify-between pt-1 text-[11px] ${
+                    isUser ? 'text-burnt-light/80' : 'text-ink-muted'
                   }`}
                 >
-                  <div className="whitespace-pre-line font-normal leading-relaxed">
-                    {m.text}
-                  </div>
-                  <div
-                    className={`flex items-center justify-between pt-1.5 text-xs sm:text-sm ${
-                      isUser ? 'text-burnt-light/80' : 'text-ink-muted'
-                    }`}
-                  >
-                    <span>{m.timestamp}</span>
-                    {!isUser && (
-                      <div className="flex items-center space-x-2 ml-3">
-                        <VoiceAssistant
-                          textToSpeak={m.text}
-                          language={isHindi ? 'hindi' : 'english'}
-                        />
-                        <button
-                          onClick={() => handleCopy(m.id, m.text)}
-                          className="hover:text-sand-900 p-1.5 rounded-lg hover:bg-sand-200/60 transition-colors"
-                          title="Copy response to clipboard"
-                        >
-                          {copiedId === m.id ? (
-                            <Check className="w-4 h-4 text-emerald-600" />
-                          ) : (
-                            <Copy className="w-4 h-4" />
-                          )}
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  <span>{m.timestamp}</span>
+                  {!isUser && (
+                    <div className="flex items-center space-x-1.5 ml-3">
+                      <VoiceAssistant
+                        textToSpeak={m.text}
+                        language={isHindi ? 'hindi' : 'english'}
+                      />
+                      <button
+                        onClick={() => handleCopy(m.id, m.text)}
+                        className="hover:text-sand-900 p-1 rounded hover:bg-sand-200/50 transition-colors"
+                        title="Copy message text"
+                      >
+                        {copiedId === m.id ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-600" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    </div>
+                  )}
                 </div>
-
-                {isUser && (
-                  <div className="w-8 h-8 rounded-xl bg-sand-200 text-sand-800 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-2xs">
-                    <User className="w-4.5 h-4.5" />
-                  </div>
-                )}
               </div>
-            );
-          })}
 
-          {isLoading && (
-            <div className="flex items-center space-x-3 text-sm text-ink-muted p-3 bg-sand-50 border border-sand-200 rounded-2xl w-fit shadow-2xs">
-              <Loader2 className="w-5 h-5 text-burnt animate-spin" />
-              <span>Analyzing document clauses and grounding response...</span>
+              {isUser && (
+                <div className="w-7 h-7 rounded-xl bg-sand-200 text-sand-800 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-2xs">
+                  <User className="w-4 h-4" />
+                </div>
+              )}
             </div>
+          );
+        })}
+
+        {isLoading && (
+          <div className="flex items-center space-x-2 text-xs text-sky-800 p-2.5 bg-white/90 border border-sky-200 rounded-2xl w-fit shadow-2xs">
+            <Loader2 className="w-4 h-4 text-sky-500 animate-spin" />
+            <span>Formulating verified point-wise answer...</span>
+          </div>
+        )}
+
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* 4. Floating Cloud Input Bar with Direct Document Attachment */}
+      <div className="pt-2 flex-shrink-0">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSend();
+          }}
+          className="bg-white/95 backdrop-blur-md border border-sky-200/90 rounded-2xl p-2 shadow-sm flex items-center space-x-2"
+        >
+          {/* Direct File Attachment Button */}
+          {onUploadStart && (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="p-2 rounded-xl text-sky-600 hover:text-sky-700 hover:bg-sky-50 transition-colors"
+              title="Upload new document directly into this chat"
+            >
+              <Paperclip className="w-4 h-4" />
+            </button>
           )}
 
-          {/* Anchor to auto-scroll when new messages arrive */}
-          <div ref={messagesEndRef} />
-        </div>
+          <input
+            type="text"
+            value={inputQuestion}
+            onChange={(e) => setInputQuestion(e.target.value)}
+            placeholder={
+              document
+                ? `Ask any question about penalties, lock-in terms, deadlines, or fees in ${document.fileName || document.docType}...`
+                : 'Drop or upload a document to begin chatting...'
+            }
+            className="flex-1 text-xs sm:text-sm bg-transparent border-0 focus:outline-none focus:ring-0 px-2 text-sand-900 placeholder:text-ink-muted/70"
+          />
 
-        {/* Input Bar (Full Width, Spacious) */}
-        <div className="p-3.5 sm:p-4 bg-sand-50/90 border-t border-sand-200 flex-shrink-0">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleSend();
-            }}
-            className="flex items-center space-x-2.5"
+          <button
+            type="submit"
+            disabled={!inputQuestion.trim() || isLoading || isProcessing}
+            className={`px-4 py-2 rounded-xl text-white text-xs font-bold transition-all flex items-center space-x-1.5 shadow-xs ${
+              !inputQuestion.trim() || isLoading || isProcessing
+                ? 'bg-sand-300 cursor-not-allowed'
+                : 'bg-burnt hover:bg-burnt-hover'
+            }`}
           >
-            <input
-              type="text"
-              value={inputQuestion}
-              onChange={(e) => setInputQuestion(e.target.value)}
-              placeholder="Ask any question about clauses, penalties, lock-in period, rent, refund rules, or counter-offers..."
-              className="flex-1 text-sm sm:text-base bg-white border border-sand-300 rounded-xl px-4 py-2.5 sm:py-3 focus:outline-none focus:border-burnt focus:ring-1 focus:ring-burnt"
-            />
-            <button
-              type="submit"
-              disabled={!inputQuestion.trim() || isLoading}
-              className={`px-5 py-2.5 sm:py-3 rounded-xl text-white font-bold transition-all flex items-center space-x-2 shadow-xs ${
-                !inputQuestion.trim() || isLoading
-                  ? 'bg-sand-300 cursor-not-allowed'
-                  : 'bg-burnt hover:bg-burnt-hover'
-              }`}
-            >
-              <span>Ask</span>
-              <Send className="w-4 h-4" />
-            </button>
-          </form>
-        </div>
+            <span>Ask</span>
+            <Send className="w-3.5 h-3.5" />
+          </button>
+        </form>
       </div>
     </div>
   );

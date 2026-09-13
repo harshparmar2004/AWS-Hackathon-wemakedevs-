@@ -271,7 +271,16 @@ export const App: React.FC = () => {
                 : ''
             }`}
           >
-            {isProcessing ? (
+            {currentView === 'chat' ? (
+              <DocumentChat
+                document={activeDocument}
+                activeLanguage={activeDocument?.language || 'english'}
+                onOpenForge={() => setCurrentView('forge')}
+                onUploadStart={handleUploadStart}
+                isProcessing={isProcessing}
+                processingStatusText={processingStatusText}
+              />
+            ) : isProcessing ? (
               <div className="max-w-lg mx-auto my-16 bg-white border border-sand-300/80 rounded-2xl p-7 sm:p-9 text-center space-y-4 shadow-xs">
                 <Loader2 className="w-9 h-9 text-burnt animate-spin mx-auto" />
                 <div className="space-y-2">
@@ -350,8 +359,11 @@ export const App: React.FC = () => {
             ) : (
               <DocumentChat
                 document={activeDocument}
-                activeLanguage={activeDocument.language || 'english'}
+                activeLanguage={activeDocument?.language || 'english'}
                 onOpenForge={() => setCurrentView('forge')}
+                onUploadStart={handleUploadStart}
+                isProcessing={isProcessing}
+                processingStatusText={processingStatusText}
               />
             )}
           </div>
