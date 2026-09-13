@@ -43,18 +43,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
         className="p-4 sm:p-5 border-b border-sand-200/80 cursor-pointer hover:bg-sand-200/40 transition-colors"
       >
         <div className="flex items-center space-x-3">
-          <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-burnt to-burnt-dark flex items-center justify-center text-white shadow-xs flex-shrink-0">
+          <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-burnt to-burnt-dark flex items-center justify-center text-white shadow-xs flex-shrink-0">
             <ShieldCheck className="w-5 h-5" />
             <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white" />
           </div>
           <div className="leading-tight">
             <div className="flex items-center space-x-1.5">
-              <span className="text-sm sm:text-[15px] font-extrabold text-sand-900 tracking-tight">DocExplainer</span>
-              <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-burnt-light text-burnt tracking-wide uppercase">
+              <span className="text-base font-extrabold text-sand-900 tracking-tight">DocExplainer</span>
+              <span className="text-xs font-extrabold px-1.5 py-0.5 rounded bg-burnt-light text-burnt tracking-wide uppercase">
                 AI
               </span>
             </div>
-            <span className="text-[11px] text-ink-muted font-medium block">
+            <span className="text-xs text-ink-muted font-medium block mt-0.5">
               Citizen Contract Shield
             </span>
           </div>
@@ -65,7 +65,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="p-3 border-b border-sand-200/80">
         <button
           onClick={onNewUpload}
-          className={`w-full flex items-center justify-center space-x-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-[13px] font-bold transition-all shadow-xs ${
+          className={`w-full flex items-center justify-center space-x-2 px-3.5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-xs ${
             currentView === 'upload'
               ? 'bg-burnt text-white ring-2 ring-burnt/30'
               : 'bg-burnt hover:bg-burnt-hover text-white'
@@ -77,10 +77,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Core Categorized Navigation */}
-      <div className="p-3 flex-1 overflow-y-auto space-y-4 text-xs">
+      <div className="p-3 flex-1 overflow-y-auto space-y-4 text-sm">
         {/* SECTION 1: DISCOVER */}
         <div className="space-y-1">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-ink-muted px-2 py-0.5">
+          <div className="text-xs font-bold uppercase tracking-wider text-ink-muted px-2 py-0.5">
             Discover
           </div>
 
@@ -95,10 +95,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <div className="flex items-center space-x-2.5">
               <Compass className={`w-4 h-4 ${currentView === 'overview' ? 'text-burnt' : 'text-sand-800'}`} />
-              <span>Overview & Hub</span>
+              <span className="text-sm">Overview & Hub</span>
             </div>
             <span
-              className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+              className={`text-xs px-2 py-0.5 rounded font-bold ${
                 currentView === 'overview' ? 'bg-burnt-light text-burnt' : 'bg-sand-200 text-sand-800'
               }`}
             >
@@ -117,10 +117,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <div className="flex items-center space-x-2.5">
               <Upload className={`w-4 h-4 ${currentView === 'upload' ? 'text-burnt' : 'text-sand-800'}`} />
-              <span>Document Upload</span>
+              <span className="text-sm">Document Upload</span>
             </div>
             <span
-              className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+              className={`text-xs px-2 py-0.5 rounded font-bold ${
                 currentView === 'upload' ? 'bg-burnt-light text-burnt' : 'bg-sand-200 text-sand-800'
               }`}
             >
@@ -131,7 +131,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* SECTION 2: DOCUMENT INTELLIGENCE */}
         <div className="space-y-1">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-ink-muted px-2 py-0.5">
+          <div className="text-xs font-bold uppercase tracking-wider text-ink-muted px-2 py-0.5">
             Analysis (Active Doc)
           </div>
 
@@ -146,14 +146,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <div className="flex items-center space-x-2.5">
               <Sparkles className={`w-4 h-4 ${currentView === 'key-points' ? 'text-burnt' : 'text-sand-800'}`} />
-              <span>Risk & Key Points</span>
+              <span className="text-sm">Risk & Diagnostics</span>
             </div>
             <span
-              className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
-                currentView === 'key-points' ? 'bg-burnt-light text-burnt' : 'bg-sand-200 text-sand-800'
+              className={`text-xs px-2 py-0.5 rounded font-bold ${
+                currentView === 'key-points' ? 'bg-burnt text-white' : 'bg-rose-100 text-rose-800'
               }`}
             >
-              Health
+              Diagnostic
             </span>
           </button>
 
@@ -168,11 +168,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <div className="flex items-center space-x-2.5">
               <MessageSquare className={`w-4 h-4 ${currentView === 'chat' ? 'text-burnt' : 'text-sand-800'}`} />
-              <span>Clause Q&A Chat</span>
+              <span className="text-sm">Clause Q&A Chat</span>
             </div>
             <span
-              className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
-                currentView === 'chat' ? 'bg-burnt-light text-burnt' : 'bg-sand-200 text-sand-800'
+              className={`text-xs px-2 py-0.5 rounded font-bold ${
+                currentView === 'chat' ? 'bg-burnt text-white' : 'bg-sand-200 text-sand-800'
               }`}
             >
               Grounded
@@ -190,10 +190,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <div className="flex items-center space-x-2.5">
               <Sliders className={`w-4 h-4 ${currentView === 'simulator' ? 'text-burnt' : 'text-sand-800'}`} />
-              <span>What-If Simulator</span>
+              <span className="text-sm">What-If Simulator</span>
             </div>
             <span
-              className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+              className={`text-xs px-2 py-0.5 rounded font-bold ${
                 currentView === 'simulator' ? 'bg-burnt-light text-burnt' : 'bg-sand-200 text-sand-800'
               }`}
             >
@@ -204,7 +204,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* SECTION 3: CITIZEN ADVOCACY */}
         <div className="space-y-1">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-ink-muted px-2 py-0.5">
+          <div className="text-xs font-bold uppercase tracking-wider text-ink-muted px-2 py-0.5">
             Citizen Action
           </div>
 
@@ -219,10 +219,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <div className="flex items-center space-x-2.5">
               <Scale className={`w-4 h-4 ${currentView === 'negotiation' ? 'text-burnt' : 'text-sand-800'}`} />
-              <span>Legal Dispute Drafter</span>
+              <span className="text-sm">Legal Dispute Drafter</span>
             </div>
             <span
-              className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+              className={`text-xs px-2 py-0.5 rounded font-bold ${
                 currentView === 'negotiation' ? 'bg-burnt-light text-burnt' : 'bg-sand-200 text-sand-800'
               }`}
             >
@@ -241,10 +241,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <div className="flex items-center space-x-2.5">
               <FileCheck className={`w-4 h-4 ${currentView === 'forge' ? 'text-burnt' : 'text-sand-800'}`} />
-              <span>Document Forge</span>
+              <span className="text-sm">Document Forge</span>
             </div>
             <span
-              className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+              className={`text-xs px-2 py-0.5 rounded font-bold ${
                 currentView === 'forge' ? 'bg-burnt text-white' : 'bg-emerald-100 text-emerald-800'
               }`}
             >
@@ -263,9 +263,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <div className="flex items-center space-x-2.5">
               <Clock className={`w-4 h-4 ${currentView === 'history' ? 'text-burnt' : 'text-sand-800'}`} />
-              <span>Chat History & Audits</span>
+              <span className="text-sm">Audit Ledger</span>
             </div>
-            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-sand-200 text-sand-800">
+            <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-sand-200 text-sand-800">
               {history.length}
             </span>
           </button>

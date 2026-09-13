@@ -5,6 +5,7 @@ import { UploadSection } from './components/UploadSection';
 import { DocumentChat } from './components/DocumentChat';
 import { ScenarioSimulatorView } from './components/ScenarioSimulatorView';
 import { NegotiationView } from './components/NegotiationView';
+import { RiskManagementView } from './components/RiskManagementView';
 import { DocumentForgeView } from './components/DocumentForgeView';
 import { HistoryView } from './components/HistoryView';
 import { ArchitectureModal } from './components/ArchitectureModal';
@@ -258,14 +259,14 @@ export const App: React.FC = () => {
         {/* Dynamic Featured Screen Body */}
         <div
           className={`flex-1 min-h-0 flex flex-col px-4 sm:px-6 lg:px-8 ${
-            currentView === 'chat' || currentView === 'key-points'
+            currentView === 'chat'
               ? 'py-2.5 sm:py-3 overflow-hidden'
               : 'py-5 sm:py-6 overflow-y-auto'
           }`}
         >
           <div
             className={`w-full max-w-[1560px] mx-auto ${
-              currentView === 'chat' || currentView === 'key-points'
+              currentView === 'chat'
                 ? 'h-full flex flex-col min-h-0'
                 : ''
             }`}
@@ -310,6 +311,7 @@ export const App: React.FC = () => {
                 document={activeDocument}
                 onSelectSample={handleSelectSample}
                 onNewUpload={handleNewUpload}
+                onOpenForge={() => setCurrentView('forge')}
               />
             ) : currentView === 'forge' ? (
               <DocumentForgeView
@@ -336,11 +338,19 @@ export const App: React.FC = () => {
                   Upload Document
                 </button>
               </div>
+            ) : currentView === 'key-points' ? (
+              <RiskManagementView
+                document={activeDocument}
+                onOpenChat={() => setCurrentView('chat')}
+                onOpenSimulator={() => setCurrentView('simulator')}
+                onOpenNegotiation={() => setCurrentView('negotiation')}
+                onOpenForge={() => setCurrentView('forge')}
+                onSelectSample={handleSelectSample}
+              />
             ) : (
               <DocumentChat
                 document={activeDocument}
                 activeLanguage={activeDocument.language || 'english'}
-                initialTab={currentView === 'key-points' ? 'points' : 'chat'}
                 onOpenForge={() => setCurrentView('forge')}
               />
             )}

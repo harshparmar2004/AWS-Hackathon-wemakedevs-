@@ -3,9 +3,22 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    font-size: 105%; /* 5% larger base scale for crisp, effortless readability */
+  }
   body {
-    @apply bg-sand-100 text-ink font-sans;
+    @apply bg-sand-100 text-ink font-sans antialiased;
     background-color: #F7F4EE;
+  }
+}
+
+@media print {
+  aside, header, button, .no-print {
+    display: none !important;
+  }
+  body {
+    background-color: #FFFFFF !important;
+    color: #000000 !important;
   }
 }
 
