@@ -18,6 +18,11 @@ import {
   TrendingUp,
   Lock,
   Zap,
+  Download,
+  FileDown,
+  Printer,
+  Sliders,
+  Scale,
 } from 'lucide-react';
 import {
   DocumentData,
@@ -27,8 +32,14 @@ import {
   TariffCalculationData,
   CustomFormulaData,
   ProjectionData,
+  RiskFlag,
 } from '../types';
 import { askDocumentQuestion, getStoredDocumentChat, saveDocumentChat } from '../services/api';
+import { ContractHealthGauge } from './ContractHealthGauge';
+import { VoiceAssistant } from './VoiceAssistant';
+import { NegotiationModal } from './NegotiationModal';
+import { ScenarioSimulator } from './ScenarioSimulator';
+import { downloadAuditReport, exportChatTranscript, printAuditCertificate } from '../services/reportGenerator';
 
 interface DocumentChatProps {
   document: DocumentData;
@@ -490,6 +501,8 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showKeyPoints, setShowKeyPoints] = useState<boolean>(true);
   const [activeMobileTab, setActiveMobileTab] = useState<'points' | 'chat'>(initialTab);
+  const [selectedFlagForNegotiation, setSelectedFlagForNegotiation] = useState<RiskFlag | null>(null);
+  const [showSimulator, setShowSimulator] = useState<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll chat to bottom when new messages arrive
@@ -671,6 +684,26 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
             <span>{isHindi ? 'Hindi (हिंदी)' : 'English'}</span>
           </button>
 
+          {/* Download Audit Report */}
+          <button
+            onClick={() => downloadAuditReport(document, messages)}
+            className="inline-flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-sand-200 bg-sand-50 hover:bg-burnt-light/50 hover:border-burnt text-sand-900 transition-all shadow-2xs"
+            title="Download Verified Legal Audit Report (.md)"
+          >
+            <Download className="w-3.5 h-3.5 text-burnt" />
+            <span className="hidden sm:inline">Audit Report</span>
+          </button>
+
+          {/* Print Certificate */}
+          <button
+            onClick={() => printAuditCertificate(document)}
+            className="inline-flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-sand-200 bg-sand-50 hover:bg-sand-100 text-sand-800 transition-all shadow-2xs"
+            title="Print or Save Official Legal Audit Certificate (PDF)"
+          >
+            <Printer className="w-3.5 h-3.5 text-ink-muted" />
+            <span className="hidden md:inline">Certificate</span>
+          </button>
+
           {/* Reset */}
           <button
             onClick={handleReset}
@@ -702,10 +735,22 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
                 </span>
               </div>
 
+              {/* Contract Health Score & Power Asymmetry Gauge */}
+              <ContractHealthGauge document={document} isHindi={isHindi} />
+
               {/* Plain Language Summary */}
               <div className="space-y-1.5">
-                <div className="text-xs font-bold text-sand-800">
-                  {isHindi ? 'दस्तावेज़ का सरल सारांश:' : 'Plain-Language Summary:'}
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-bold text-sand-800">
+                    {isHindi ? 'दस्तावेज़ का सरल सारांश:' : 'Plain-Language Summary:'}
+                  </div>
+                  {explanationText && (
+                    <VoiceAssistant
+                      text={explanationText}
+                      language={isHindi ? 'hindi' : 'english'}
+                      label={isHindi ? 'बोलकर सुनें' : 'Read Aloud'}
+                    />
+                  )}
                 </div>
                 <div className="bg-sand-50/80 border border-sand-200/80 rounded-lg p-3 text-xs sm:text-sm text-sand-900 leading-relaxed font-normal">
                   {explanationText || 'Extracting document highlights...'}
@@ -726,7 +771,7 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
                     {currentRiskFlags.map((flag, idx) => (
                       <div
                         key={idx}
-                        className="bg-sand-50/90 border border-sand-200/90 rounded-lg p-3 text-xs space-y-1 hover:border-burnt/50 transition-colors"
+                        className="bg-sand-50/90 border border-sand-200/90 rounded-lg p-3 text-xs space-y-2 hover:border-burnt/50 transition-colors"
                       >
                         <div className="flex items-center justify-between">
                           <span className="font-bold text-burnt text-xs uppercase tracking-wide">
@@ -739,6 +784,16 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
                         <p className="text-ink-muted text-xs leading-relaxed">
                           {flag.why}
                         </p>
+                        <div className="flex items-center justify-end pt-1.5 border-t border-sand-200/60">
+                          <button
+                            onClick={() => setSelectedFlagForNegotiation(flag)}
+                            className="inline-flex items-center space-x-1 text-[11px] font-bold text-burnt hover:text-burnt-dark bg-burnt-light/70 hover:bg-burnt-light px-2.5 py-1 rounded-md transition-all shadow-2xs"
+                            title="Draft legal counter-proposal to negotiate this clause"
+                          >
+                            <Scale className="w-3.5 h-3.5 text-burnt" />
+                            <span>{isHindi ? '⚖️ कानूनी बातचीत ड्राफ्ट' : '⚖️ Counter-Negotiate'}</span>
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -751,6 +806,37 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
                 isHindi={isHindi}
                 translatedNarrative={document.translatedProjectionNarrative}
               />
+
+              {/* Interactive Scenario Simulator Trigger & Panel */}
+              {document.projections && (
+                <div className="pt-1">
+                  <button
+                    onClick={() => setShowSimulator(!showSimulator)}
+                    className={`w-full py-2 px-3 rounded-lg border text-xs font-semibold flex items-center justify-between transition-all shadow-2xs ${
+                      showSimulator
+                        ? 'bg-burnt text-white border-burnt shadow-xs'
+                        : 'bg-sand-50 hover:bg-burnt-light/50 border-sand-300 text-sand-900'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <Sliders className={`w-3.5 h-3.5 ${showSimulator ? 'text-white' : 'text-burnt'}`} />
+                      <span className="font-bold">
+                        {isHindi
+                          ? showSimulator ? 'सिम्युलेटर बंद करें' : 'इंटरएक्टिव "What-If" सिम्युलेटर चलाएं'
+                          : showSimulator ? 'Hide Scenario Simulator' : '🎮 Interactive "What-If" Simulator'}
+                      </span>
+                    </div>
+                    <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${showSimulator ? 'bg-white/25 text-white' : 'bg-sand-200 text-sand-800'}`}>
+                      {showSimulator ? 'Collapse ▲' : 'Live Sliders ▼'}
+                    </span>
+                  </button>
+                  {showSimulator && (
+                    <div className="mt-2.5">
+                      <ScenarioSimulator document={document} projections={document.projections} isHindi={isHindi} />
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Key Dates (if available) */}
               {document.keyDates && document.keyDates.length > 0 && (
@@ -789,10 +875,20 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
                 <span>Fact-grounded responses citing clauses from this document</span>
               </span>
-              <span className="text-xs text-ink-muted flex items-center">
-                <Clock className="w-3 h-3 mr-1" />
-                {messages.length} messages
-              </span>
+              <div className="flex items-center space-x-3 text-xs">
+                <button
+                  onClick={() => exportChatTranscript(document.docId || document.fileName || 'document', messages)}
+                  className="text-emerald-800 hover:text-emerald-950 font-semibold flex items-center space-x-1 transition-colors px-1.5 py-0.5 rounded hover:bg-emerald-100/60"
+                  title="Export conversation history (.txt)"
+                >
+                  <FileDown className="w-3.5 h-3.5" />
+                  <span>Export Chat</span>
+                </button>
+                <span className="text-ink-muted flex items-center">
+                  <Clock className="w-3 h-3 mr-1" />
+                  {messages.length} msgs
+                </span>
+              </div>
             </div>
 
             {/* Quick-Ask Suggestion Chips */}
@@ -846,17 +942,24 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
                       >
                         <span>{m.timestamp}</span>
                         {!isUser && (
-                          <button
-                            onClick={() => handleCopy(m.id, m.text)}
-                            className="hover:text-sand-900 ml-2 p-1 rounded hover:bg-sand-200/60 transition-colors"
-                            title="Copy response"
-                          >
-                            {copiedId === m.id ? (
-                              <Check className="w-3.5 h-3.5 text-emerald-600" />
-                            ) : (
-                              <Copy className="w-3.5 h-3.5" />
-                            )}
-                          </button>
+                          <div className="flex items-center space-x-1 ml-2">
+                            <VoiceAssistant
+                              text={m.text}
+                              language={isHindi ? 'hindi' : 'english'}
+                              compact={true}
+                            />
+                            <button
+                              onClick={() => handleCopy(m.id, m.text)}
+                              className="hover:text-sand-900 p-1 rounded hover:bg-sand-200/60 transition-colors"
+                              title="Copy response"
+                            >
+                              {copiedId === m.id ? (
+                                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                              ) : (
+                                <Copy className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -913,6 +1016,15 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
           </div>
         </div>
       </div>
+
+      {/* 1-Click Legal Negotiation Drafter Modal */}
+      {selectedFlagForNegotiation && (
+        <NegotiationModal
+          flag={selectedFlagForNegotiation}
+          document={document}
+          onClose={() => setSelectedFlagForNegotiation(null)}
+        />
+      )}
     </div>
   );
 };

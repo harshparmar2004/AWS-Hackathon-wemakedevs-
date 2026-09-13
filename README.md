@@ -58,6 +58,44 @@ The frontend delivers a streamlined two-column dashboard:
 
 ---
 
+## 🛡️ Autonomous Citizen Shield: 5 Groundbreaking Systems
+
+To transform DocExplainer AI from a passive document viewer into an **active citizen protection shield**, the frontend integrates 5 autonomous client-side systems:
+
+```
+  ┌────────────────────────────────────────────────────────────────────────┐
+  │                    🛡️ CITIZEN CONTRACT SHIELD                          │
+  ├───────────────────────┬────────────────────────┬───────────────────────┤
+  │ 1. Contract Health    │ 2. Bharat Voice        │ 3. 1-Click Fight Back │
+  │    & Power Asymmetry  │    Assistant (EN/HI)   │    Legal Drafter      │
+  │    (0-100 Score)      │    (Web Speech API)    │    (ICA Sec 74 & RBI) │
+  ├───────────────────────┼────────────────────────┴───────────────────────┤
+  │ 4. "What-If" Scenario │ 5. Downloadable Audit Certificate & Chat       │
+  │    Simulator (Sliders)│    (Official Verification Certificate .md/PDF) │
+  └───────────────────────┴────────────────────────────────────────────────┘
+```
+
+1. **Contract Health Score & Power Asymmetry Gauge:**
+   - Evaluates documents on a 0–100 health scale factoring in penalty severity, lock-ins, deposit ratios, and unilateral termination terms.
+   - Measures the **Power Asymmetry Balance** (e.g., 78% Landlord vs. 22% Tenant Rights) so users immediately recognize unfair agreements.
+2. **Bharat Voice Assistant (Web Speech Synthesis):**
+   - Reads aloud executive summaries and assistant chat answers in natural **Hindi (`hi-IN`)** and **English (`en-IN` / `en-US`)**.
+   - Zero cloud API latency and \$0 cost; breaks the literacy barrier for millions of citizens across Bharat.
+3. **1-Click "Fight Back" Negotiation & Dispute Drafter:**
+   - Users click `"⚖️ Counter-Negotiate"` on any predatory clause to instantly generate a legally-grounded counter-proposal.
+   - Automatically cites statutory protections including **Section 74 of the Indian Contract Act 1872** (forbidding unreasonable penalties), the **Model Tenancy Act 2021** (2-month deposit ceiling), and **RBI Circulars on Foreclosure Fees**.
+   - Includes one-click Copy, Mailto, and `.txt` export.
+4. **Interactive "What-If" Scenario Simulator:**
+   - Real-time interactive sliders allowing citizens to simulate financial consequences before signing:
+     - **Lease Delay Simulator:** Slide from 0 to 180 days to watch compounding penalties surge in real time.
+     - **Loan Foreclosure Simulator:** Slide across months to see the exact moment lock-in restrictions drop and compare remaining principal against exit penalties.
+     - **Utility Tariff Simulator:** Slide kWh consumption to visualize telescopic slab steps and peak-load surcharges.
+5. **Downloadable Verified Audit Certificate & Chat Transcripts:**
+   - Generates an official, stamped **Contract Risk Audit & Verification Certificate** (`.md` or printable PDF) documenting the health score, clause citations, and deterministic schedules.
+   - One-click export for chat transcripts to maintain legal audit trails.
+
+---
+
 ## 🏛️ End-to-End AWS Architecture & Data Flow
 
 ```mermaid

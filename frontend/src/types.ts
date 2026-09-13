@@ -152,3 +152,23 @@ export interface HistoryItem {
   isSample?: boolean;
   chatCount?: number;
 }
+
+export interface ContractHealthMetrics {
+  healthScore: number;
+  ratingLabel: 'Critical Risk' | 'High Risk' | 'Moderate Risk' | 'Fair & Balanced';
+  ratingColor: string;
+  asymmetryScore: number;
+  partyAName: string;
+  partyBName: string;
+  trapCount: number;
+  unilateralClausesCount: number;
+}
+
+export interface NegotiationDraft {
+  clause: string;
+  predatorySummary: string;
+  legalGrounding: string;
+  marketBenchmark: string;
+  emailSubject: string;
+  emailBody: string;
+}
